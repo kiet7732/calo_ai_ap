@@ -2,7 +2,7 @@
 
 ### Live Demo (Phiên bản Web)
 Trải nghiệm ứng dụng trực tiếp trên Vercel:
-**[https://calculator-app-sigma-sage.vercel.app](https://calo-ai-m067udifn-kiet7732s-projects.vercel.app/)**
+[**[https://calculator-app-sigma-sage.vercel.app](https://calo-ai-ap-git-feature-setting-screen-kiet7732s-projects.vercel.app/)**]
 
 *Lưu ý: Vì đây là giao diện thiết kế cho Mobile, vui lòng nhấn **F12** -> chọn **Chế độ xem di động** (Ctrl+Shift+M) trên trình duyệt để có trải nghiệm tốt nhất. Đây chỉ là bản thử*
 
