@@ -1,7 +1,27 @@
 import 'package:flutter/material.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(
+    // 1. Dùng MultiProvider để bọc ứng dụng
+    MultiProvider(
+      // 2. Cung cấp một DANH SÁCH các provider
+      providers: [
+        ChangeNotifierProvider(create: (context) => TodayStatsProvider()),
+        ChangeNotifierProvider(create: (context) => HistoryProvider()),
+
+        // ProxyProvider để ReportProvider có thể "đọc" dữ liệu từ HistoryProvider
+        ChangeNotifierProxyProvider<HistoryProvider, ReportProvider>(
+          create: (_) => ReportProvider(),
+          update: (_, history, previousReport) =>
+              previousReport!..updateMeals(history.allMeals),
+        ),
+        ChangeNotifierProvider(create: (context) => AccountSetupProvider()),
+      ],
+
+      // 3. Child là ứng dụng MyApp
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {

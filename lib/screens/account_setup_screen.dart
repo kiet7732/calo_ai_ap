@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../utils/app_routes.dart';
 //lib/screens/account_setup_screen.dart
 import '../providers/account_setup_provider.dart';
 import '../widgets/account_setup/gender_step.dart';
@@ -41,20 +42,45 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
     }
   }
 
+  void _calculateAndNextPage() async {
+    // Lấy provider (không lắng nghe) để gọi hàm
+    final provider = context.read<AccountSetupProvider>();
+    await provider.calculateCaloriePlan();
+
+    // Sau khi tính toán xong, chuyển đến trang cuối
+    if (mounted) {
+      // Kiểm tra widget còn tồn tại
+      _pageController.animateToPage(
+        _totalPages - 1,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  void _completeSetup() {
+    print("Account setup completed! Nextpage");
+    // Điều hướng đến màn hình chính và xóa tất cả các route trước đó
+    Navigator.of(
+      context,
+      rootNavigator: true,
+    ).pushNamedAndRemoveUntil(AppRoutes.main, (Route<dynamic> route) => false);
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Sử dụng ChangeNotifierProvider để cung cấp AccountSetupProvider
-    // cho tất cả các widget con trong cây.
-    return ChangeNotifierProvider(
-      create: (_) => AccountSetupProvider(),
-      child: Scaffold(
+    // Lắng nghe AccountSetupProvider đã được cung cấp ở main.dart
+    return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         leading: _currentPage > 0
             ? IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black),
+                icon: const Icon(
+                  Icons.arrow_back_ios_new,
+                  color: Colors.black,
+                ),
                 onPressed: () {
                   _pageController.previousPage(
                     duration: const Duration(milliseconds: 400),
@@ -70,26 +96,44 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
           minHeight: 6,
         ),
       ),
-      body: PageView(
-        controller: _pageController,
-        physics: const NeverScrollableScrollPhysics(),
-        onPageChanged: (page) {
-          setState(() {
-            _currentPage = page;
-          });
+      // Sử dụng Stack để hiển thị màn hình tải đè lên trên
+      body: Consumer<AccountSetupProvider>(
+        builder: (context, provider, child) {
+          return Stack(
+            children: [
+              // Lớp 1: PageView luôn được build
+              PageView(
+                controller: _pageController,
+                physics: const NeverScrollableScrollPhysics(),
+                onPageChanged: (page) {
+                  setState(() {
+                    _currentPage = page;
+                  });
+                },
+                children: const [
+                  GenderStep(),
+                  DobStep(),
+                  HeightStep(),
+                  WeightStep(isGoalWeight: false),
+                  WeightStep(isGoalWeight: true),
+                  ActivityLevelStep(),
+                  PlanReadyStep(),
+                ],
+              ),
+              // Lớp 2: Màn hình tải (chỉ hiển thị khi isLoading = true)
+              if (provider.isLoading)
+                Container(
+                  color: Colors.white.withOpacity(0.8),
+                  child: const Center(
+                    child: CircularProgressIndicator(color: primaryColor),
+                  ),
+                ),
+            ],
+          );
         },
-        children: [
-          const GenderStep(),
-          const DobStep(),
-          const HeightStep(),
-          const WeightStep(isGoalWeight: false),
-          const WeightStep(isGoalWeight: true),
-          const ActivityLevelStep(),
-          const PlanReadyStep(),
-        ],
       ),
       bottomNavigationBar: _buildBottomButton(),
-    ));
+    );
   }
 
   Widget? _buildBottomButton() {
@@ -98,10 +142,7 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
       return Padding(
         padding: const EdgeInsets.all(24.0),
         child: ElevatedButton(
-          onPressed: () {
-            // TODO: Xử lý khi hoàn tất, ví dụ: lưu dữ liệu và điều hướng
-            print("Setup Complete!");
-          },
+          onPressed: _completeSetup,
           style: ElevatedButton.styleFrom(
             backgroundColor: primaryColor,
             minimumSize: const Size(double.infinity, 56),
@@ -112,7 +153,35 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
           child: const Text(
             "Start Your Plan Now",
             style: TextStyle(
-                fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Nút đặc biệt cho trang 6 (Activity Level), index là 5
+    if (_currentPage == 5) {
+      return Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: ElevatedButton(
+          onPressed: _calculateAndNextPage,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: primaryColor,
+            minimumSize: const Size(double.infinity, 56),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
+          child: const Text(
+            "Tiếp tục",
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
           ),
         ),
       );
@@ -133,7 +202,10 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
         child: const Text(
           "Tiếp tục",
           style: TextStyle(
-              fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         ),
       ),
     );

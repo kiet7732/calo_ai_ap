@@ -1,4 +1,4 @@
-// lib/screens/account_setup/height_step.dart
+// lib/widgets/account_setup/height_step.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/account_setup_provider.dart';
