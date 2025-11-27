@@ -69,10 +69,10 @@ packages:
     dependency: "direct main"
     description:
       name: fl_chart
-      sha256: "7ca9a40f4eb85949190e54087be8b4d6ac09dc4c54238d782a34cf1f7c011de9"
+      sha256: d0f0d49112f2f4b192481c16d05b6418bd7820e021e265a3c22db98acf7ed7fb
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.1"
+    version: "0.68.0"
   flutter:
     dependency: "direct main"
     description: flutter
@@ -274,4 +274,4 @@ packages:
     version: "15.0.2"
 sdks:
   dart: ">=3.9.2 <4.0.0"
-  flutter: ">=3.27.4"
+  flutter: ">=3.18.0-18.0.pre.54"

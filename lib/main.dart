@@ -23,7 +23,6 @@ void main() {
           update: (_, history, previousReport) =>
               previousReport!..updateMeals(history.allMeals),
         ),
-        // (thêm các provider khác o đây)
         ChangeNotifierProvider(create: (context) => AccountSetupProvider()),
       ],
 
