@@ -1,10 +1,18 @@
 # calo_ai_ap
 
-A new Flutter project.
+### Live Demo (Phiên bản Web)
+Trải nghiệm ứng dụng trực tiếp trên Vercel:
+[**[https://calculator-app-sigma-sage.vercel.app](https://calo-ai-ap-git-feature-setting-screen-kiet7732s-projects.vercel.app/)**]
+
+*Lưu ý: Vì đây là giao diện thiết kế cho Mobile, vui lòng nhấn **F12** -> chọn **Chế độ xem di động** (Ctrl+Shift+M) trên trình duyệt để có trải nghiệm tốt nhất. Đây chỉ là bản thử*
 
 ## Getting Started
 
-This project is a starting point for a Flutter application.
+### Live Demo (Phiên bản Web)
+Trải nghiệm ứng dụng trực tiếp trên Vercel:
+**[https://calculator-app-sigma-sage.vercel.app](https://calo-ai-m067udifn-kiet7732s-projects.vercel.app/)**
+
+*Lưu ý: Vì đây là giao diện thiết kế cho Mobile, vui lòng nhấn **F12** -> chọn **Chế độ xem di động** (Ctrl+Shift+M) trên trình duyệt để có trải nghiệm tốt nhất. Đây chỉ là bản thử*
 
 A few resources to get you started if this is your first Flutter project:
 
