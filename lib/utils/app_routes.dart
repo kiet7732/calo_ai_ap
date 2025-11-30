@@ -15,4 +15,7 @@ class AppRoutes {
 
   // Route cho luồng thiết lập tài khoản
   static const String accountSetup = '/account-setup';
+
+  // THÊM: Route cho màn hình đăng nhập
+  static const String login = '/login';
 }
