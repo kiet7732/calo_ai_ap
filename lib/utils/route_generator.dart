@@ -11,6 +11,7 @@ import '../screens/history_screen.dart';
 import '../screens/report_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/account_setup_screen.dart'; // SỬA: Import màn hình thiết lập tài khoản
+import '../screens/login_screen.dart'; // THÊM: Import màn hình đăng nhập
 
 /// Lớp quản lý việc tạo và điều hướng giữa các màn hình.
 class RouteGenerator {
@@ -40,6 +41,9 @@ class RouteGenerator {
 
       case AppRoutes.accountSetup:
         return MaterialPageRoute(builder: (_) => const AccountSetupScreen());
+
+      case AppRoutes.login:
+        return MaterialPageRoute(builder: (_) => const LoginScreen());
 
       default:
         // Nếu route không tồn tại, điều hướng đến màn hình lỗi.

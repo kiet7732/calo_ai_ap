@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "523825357814",
+    "project_id": "calo-ai-f4722",
+    "storage_bucket": "calo-ai-f4722.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:523825357814:android:baca3a080093f1dd761dd7",
+        "android_client_info": {
+          "package_name": "com.example.calo_ai_ap"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "523825357814-jpcs89g4j050e0grt05vo2ro9k85o4vr.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA-ED5H_rJQj-kdK1h45eBQ-9VgJH7ZED8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "523825357814-jpcs89g4j050e0grt05vo2ro9k85o4vr.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
