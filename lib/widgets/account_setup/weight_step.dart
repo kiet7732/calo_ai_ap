@@ -53,34 +53,41 @@ class _WeightStepState extends State<WeightStep> {
     return "${_currentWeightKg.toStringAsFixed(1)} kg";
   }
 
+  bool _isUserScrolling = false;
+
   void _handleScrollNotification(ScrollNotification notification) {
-    // Mỗi 0.1kg là một index.
-    final centerIndex = (_scrollController.offset / itemWidth).round();
-    final newWeight = minWeightKg + (centerIndex / 10.0);
+    if (notification is UserScrollNotification) {
+      _isUserScrolling = true;
+    }
 
     if (notification is ScrollUpdateNotification) {
+      final newWeight = minWeightKg + ((_scrollController.offset / itemWidth).round() / 10.0);
       if ((_currentWeightKg - newWeight).abs() > 0.01) {
         setState(() {
           _currentWeightKg = newWeight;
         });
       }
     }
-
+    
     if (notification is ScrollEndNotification) {
-      final snapOffset = centerIndex * itemWidth;
-      if ((_scrollController.offset - snapOffset).abs() > 0.1) {
+      if (_isUserScrolling) {
+        _isUserScrolling = false; // Reset cờ
+
+        final centerIndex = (_scrollController.offset / itemWidth).round();
+        final finalWeight = minWeightKg + (centerIndex / 10.0);
+        final snapOffset = centerIndex * itemWidth;
+
         _scrollController.animateTo(
           snapOffset,
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeOut,
         );
-      }
 
-      final finalWeight = minWeightKg + (centerIndex / 10.0);
-      if (widget.isGoalWeight) {
-        context.read<AccountSetupProvider>().updateWeight(goal: finalWeight);
-      } else {
-        context.read<AccountSetupProvider>().updateWeight(current: finalWeight);
+        if (widget.isGoalWeight) {
+          context.read<AccountSetupProvider>().updateWeight(goal: finalWeight);
+        } else {
+          context.read<AccountSetupProvider>().updateWeight(current: finalWeight);
+        }
       }
     }
   }

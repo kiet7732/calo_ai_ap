@@ -55,37 +55,46 @@ class _HeightStepState extends State<HeightStep> {
     return "${_currentHeightCm.toDouble()} cm"; 
   }
 
-  // --- SỬA LỖI LOGIC LAG/CRASH ---
-  void _handleScrollNotification(ScrollNotification notification) {
-    // 1. Tính toán index trung tâm
-    // Vị trí offset chính là vị trí trung tâm (vì đã có padding)
-    final centerIndex = (_scrollController.offset / itemWidth).round();
-    final newHeight = minHeightCm + centerIndex;
+  // --- TỐI ƯU HIỆU NĂNG: SỬA LỖI LAG/CRASH ---
+  bool _isUserScrolling = false;
 
-    // 2. SỬA HIỆU NĂNG: Cập nhật UI (setState) theo thời gian thực KHI ĐANG KÉO
+  void _handleScrollNotification(ScrollNotification notification) {
+    // 1. Xác định xem người dùng có đang chủ động kéo hay không
+    if (notification is UserScrollNotification) {
+      // Nếu người dùng bắt đầu hoặc kết thúc kéo, cập nhật cờ
+      _isUserScrolling = true;
+    }
+
+    // 2. Cập nhật giá trị hiển thị (setState) khi đang cuộn
     if (notification is ScrollUpdateNotification) {
+      final newHeight = minHeightCm + (_scrollController.offset / itemWidth).round();
       if (_currentHeightCm != newHeight) {
-        // Chỉ gọi setState, không gọi Provider
         setState(() {
           _currentHeightCm = newHeight;
         });
       }
     }
 
-    // 3. SỬA HIỆU NĂNG: Chỉ "Snap" và "Lưu" (Provider) KHI DỪNG KÉO
+    // 3. Chỉ "Snap" và "Lưu" (Provider) khi người dùng đã dừng kéo
     if (notification is ScrollEndNotification) {
-      // "Snap" đến vị trí item gần nhất
-      final snapOffset = (centerIndex * itemWidth);
-      if ((_scrollController.offset - snapOffset).abs() > 0.1) {
+      // Chỉ thực hiện khi đây là kết thúc của một lần kéo từ người dùng
+      if (_isUserScrolling) {
+        _isUserScrolling = false; // Reset cờ
+
+        final centerIndex = (_scrollController.offset / itemWidth).round();
+        final finalHeight = minHeightCm + centerIndex;
+        final snapOffset = centerIndex * itemWidth;
+
+        // Gọi animateTo để "snap" vào vị trí gần nhất
         _scrollController.animateTo(
           snapOffset,
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeOut,
         );
+
+        // Chỉ gọi provider để lưu dữ liệu 1 LẦN khi đã dừng
+        context.read<AccountSetupProvider>().updateHeight(finalHeight);
       }
-      
-      // Chỉ gọi provider để lưu dữ liệu 1 LẦN khi đã dừng
-      context.read<AccountSetupProvider>().updateHeight(newHeight);
     }
   }
   // --- KẾT THÚC SỬA LỖI ---
