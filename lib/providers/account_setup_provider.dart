@@ -1,6 +1,8 @@
 // lib/providers/account_setup_provider.dart
 import 'package:flutter/material.dart';
 import '../models/user_profile.dart'; 
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
 import '../utils/calorie_calculator.dart'; //Import lớp tiện ích tính toán
 
@@ -56,6 +58,13 @@ class AccountSetupProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Cập nhật chiều cao mà không thông báo cho các listener.
+  /// Dùng cho sự kiện `onChanged` của Slider để tránh lag.
+  void updateHeightSilently(int height) {
+    _userProfile = _userProfile.copyWith(height: height);
+    // Không gọi notifyListeners() ở đây
+  }
+
   void updateWeight({double? current, double? goal}) {
     _userProfile = _userProfile.copyWith(currentWeight: current, goalWeight: goal);
     if (current != null) {
@@ -66,6 +75,14 @@ class AccountSetupProvider extends ChangeNotifier {
     }
     notifyListeners();
   }
+
+  /// Cập nhật cân nặng mà không thông báo cho các listener.
+  /// Dùng cho sự kiện `onChanged` của Slider để tránh lag.
+  void updateWeightSilently({double? current, double? goal}) {
+    _userProfile = _userProfile.copyWith(currentWeight: current, goalWeight: goal);
+    // Không gọi notifyListeners() ở đây
+  }
+
 
   void updateActivityLevel(ActivityLevel level) {
     _userProfile = _userProfile.copyWith(activityLevel: level);
@@ -138,6 +155,46 @@ class AccountSetupProvider extends ChangeNotifier {
     print("Prediction: ${predictionResult.weeksToGoal} weeks to reach goal on ${predictionResult.targetDate}");
     print("----------------------------------");
 
-    // TODO: Lưu _userProfile lên Firebase
+    // BỎ TODO: Việc lưu sẽ được thực hiện ở hàm riêng
+  }
+
+  // --- 5. HÀM LƯU DỮ LIỆU LÊN FIRESTORE ---
+  Future<bool> saveUserProfileToFirestore() async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      // Lấy người dùng hiện tại từ Firebase Auth
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) {
+        throw Exception("Người dùng chưa đăng nhập. Không thể lưu dữ liệu.");
+      }
+
+      // Cập nhật _userProfile với thông tin từ Auth và đánh dấu hoàn tất
+      _userProfile = _userProfile.copyWith(
+        uid: currentUser.uid,
+        email: currentUser.email,
+        displayName: currentUser.displayName,
+        setupComplete: true, // Đánh dấu đã hoàn tất thiết lập
+      );
+
+      // Chuyển đổi đối tượng thành Map để lưu
+      final userData = _userProfile.toJson();
+
+      // Lưu vào Firestore
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser.uid)
+          .set(userData);
+
+      print("SUCCESS: User profile saved to Firestore for UID: ${currentUser.uid}");
+      return true; // Trả về true nếu thành công
+    } catch (e) {
+      print("ERROR saving user profile to Firestore: $e");
+      return false; // Trả về false nếu có lỗi
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 }
