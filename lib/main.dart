@@ -31,7 +31,7 @@ void main() async { // 1. Chuyển hàm main thành async
         ChangeNotifierProxyProvider<HistoryProvider, ReportProvider>(
           create: (_) => ReportProvider(),
           update: (_, history, previousReport) =>
-              previousReport!..updateMeals(history.allMeals),
+              previousReport!..updateDailyStats(history.dailyStats),
         ),
         ChangeNotifierProvider(create: (context) => AccountSetupProvider()),
         // Thêm AuthProvider vào đây để toàn bộ ứng dụng có thể truy cập

@@ -1,13 +1,12 @@
 // lib/screens/today_screen.dart
 import 'package:flutter/material.dart';
 
-// Import các Widget con đã được tách ra
 import '../widgets/calorie_progress_ring.dart';
 import '../widgets/macro_card.dart';
 import '../widgets/meal_item_tile.dart';
-import '../utils/app_routes.dart';
-//provider
+
 import '../models/meal.dart';
+import '../models/meal_entry.dart';
 import '../providers/today_stats_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -32,7 +31,7 @@ class TodayScreen extends StatelessWidget {
     final double topPadding = MediaQuery.of(context).padding.top;
 
     final stats = context.watch<TodayStatsProvider>();
-    final List<Meal> recentMeals = stats.recentMeals;
+    final List<MealEntry> todayMealEntries = stats.todayMealEntries;
 
     
     return Scaffold(
@@ -71,7 +70,7 @@ class TodayScreen extends StatelessWidget {
                     children: [
                       const Text(
                         'Hôm nay',
-                        // Sửa: Đổi màu chữ thành TRẮNG để nổi bật trên nền xanh
+                        //Đổi màu chữ thành TRẮNG để nổi bật trên nền xanh
                         style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
@@ -83,10 +82,10 @@ class TodayScreen extends StatelessWidget {
                         height: 40,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          // Sửa: Dùng màu trắng mờ cho nền avatar
+                          //Dùng màu trắng mờ cho nền avatar
                           color: Colors.white.withOpacity(0.3), // ĐỔI MÀU
                         ),
-                        // Sửa: Đổi màu icon thành TRẮNG
+                        //Đổi màu icon thành TRẮNG
                         child: const Icon(
                           Icons.person,
                           size: 22,
@@ -139,8 +138,8 @@ class TodayScreen extends StatelessWidget {
                             const SizedBox(height: 24),
                             // SỬ DỤNG WIDGET: Biểu đồ Tiến độ Calo
                             CalorieProgressRing(
-                              consumed: stats.consumed, // Từ Provider
-                              goal: stats.calorieGoal, // Từ Provider
+                              consumed: stats.consumedCalories,
+                              goal: stats.calorieGoal.toDouble(),
                             ),
                             const SizedBox(height: 32),
                             // SỬ DỤNG WIDGET: Thẻ Dinh dưỡng (Macro Cards)
@@ -150,8 +149,8 @@ class TodayScreen extends StatelessWidget {
                                 Expanded(
                                   child: MacroCard(
                                     label: "Protein",
-                                    current: stats.proteinCurrent,
-                                    goal: stats.proteinGoal,
+                                    current: stats.consumedProtein,
+                                    goal: stats.proteinGoal.toDouble(),
                                     unit: "g",
                                     color: const Color(0xFF6C63FF),
                                   ),
@@ -160,8 +159,8 @@ class TodayScreen extends StatelessWidget {
                                 Expanded(
                                   child: MacroCard(
                                     label: "Carb",
-                                    current: stats.carbCurrent,
-                                    goal: stats.carbGoal,
+                                    current: stats.consumedCarbs,
+                                    goal: stats.carbGoal.toDouble(),
                                     unit: "g",
                                     color: const Color.fromARGB(
                                       255,
@@ -175,8 +174,8 @@ class TodayScreen extends StatelessWidget {
                                 Expanded(
                                   child: MacroCard(
                                     label: "Fat",
-                                    current: stats.fatCurrent,
-                                    goal: stats.fatGoal,
+                                    current: stats.consumedFat,
+                                    goal: stats.fatGoal.toDouble(),
                                     unit: "g",
                                     color: const Color.fromARGB(255, 255, 0, 0),
                                   ),
@@ -221,18 +220,25 @@ class TodayScreen extends StatelessWidget {
                       // SỬ DỤNG WIDGET: Danh sách Món ăn Gần đây
                       Column(
                         children:
-                            recentMeals // (recentMeals là List<Meal> từ Provider)
+                            todayMealEntries
                                 .take(5)
-                                .map(
-                                  (meal) => Padding(
-                                    // 'meal' ở đây là một đối tượng Meal
+                                .expand((entry) => entry.items.map((item) => (entry, item)))
+                                .map((record) {
+                                  final entry = record.$1;
+                                  final item = record.$2;
+                                  return Padding(
                                     padding: const EdgeInsets.only(bottom: 8.0),
-
-                                    // SỬ DỤNG ĐÃ SỬA:
-                                    // Chỉ cần truyền 'meal' vào
-                                    child: MealItemTile(meal: meal),
-                                  ),
-                                )
+                                    child: MealItemTile(
+                                      // Giả lập một đối tượng Meal để tương thích với MealItemTile
+                                      // Bạn có thểealItemTile để nhận FoodItem và mealType
+                                      meal: Meal(
+                                        id: entry.id, name: item.name, date: entry.createdAt,
+                                        calories: item.calories.toInt(), emoji: '🍲', protein: item.protein.toInt(),
+                                        carbs: item.carbs.toInt(), fat: item.fat.toInt()
+                                      ),
+                                    ),
+                                  );
+                                })
                                 .toList(),
                       ),
                     ],
