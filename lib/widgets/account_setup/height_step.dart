@@ -18,9 +18,9 @@ class _HeightStepState extends State<HeightStep> {
   static const int minHeightCm = 100;
   static const int maxHeightCm = 230;
   
-  // SỬA: Tăng chiều rộng item để có khoảng cách (giống Figma)
+  //Tăng chiều rộng item để có khoảng cách (giống Figma)
   static const double itemWidth = 16.0; 
-  static const double rulerHeight = 180.0; // SỬA: Tăng chiều cao của thước đo
+  static const double rulerHeight = 180.0; //Tăng chiều cao của thước đo
 
   late ScrollController _scrollController;
   HeightUnit _selectedUnit = HeightUnit.cm;
@@ -55,7 +55,7 @@ class _HeightStepState extends State<HeightStep> {
     return "${_currentHeightCm.toDouble()} cm"; 
   }
 
-  // --- TỐI ƯU HIỆU NĂNG: SỬA LỖI LAG/CRASH ---
+  // --- TỐI ƯU HIỆU NĂNG:ỖI LAG/CRASH ---
   bool _isUserScrolling = false;
 
   void _handleScrollNotification(ScrollNotification notification) {
@@ -97,7 +97,7 @@ class _HeightStepState extends State<HeightStep> {
       }
     }
   }
-  // --- KẾT THÚC SỬA LỖI ---
+  // --- KẾT THÚCỖI ---
 
   @override
   Widget build(BuildContext context) {
@@ -109,7 +109,7 @@ class _HeightStepState extends State<HeightStep> {
         children: [
           const Spacer(flex: 1),
           // Nút chuyển đổi đơn vị
-          // SỬA: Thay thế hàm helper bằng một Widget độc lập để tối ưu hiệu năng
+          //Thay thế hàm helper bằng một Widget độc lập để tối ưu hiệu năng
           UnitToggle(
             selectedUnit: _selectedUnit,
             onChanged: (newUnit) => setState(() => _selectedUnit = newUnit),
@@ -124,7 +124,7 @@ class _HeightStepState extends State<HeightStep> {
           ),
           const Spacer(flex: 2),
 
-          // --- SỬA GIAO DIỆN THƯỚC ĐO (GIỐNG FIGMA) ---
+          // ---IAO DIỆN THƯỚC ĐO (GIỐNG FIGMA) ---
           SizedBox(
             height: rulerHeight, // Chiều cao cố định
             child: NotificationListener<ScrollNotification>(
@@ -132,7 +132,7 @@ class _HeightStepState extends State<HeightStep> {
                 _handleScrollNotification(notification);
                 return true;
               },
-              // SỬA: Xóa Stack/Positioned (Không dùng con trỏ cố định)
+              //Xóa Stack/Positioned (Không dùng con trỏ cố định)
               child: ListView.builder(
                 controller: _scrollController,
                 scrollDirection: Axis.horizontal,
@@ -146,10 +146,10 @@ class _HeightStepState extends State<HeightStep> {
                   final isMajorTick = heightValue % 10 == 0;
                   final isMediumTick = heightValue % 5 == 0;
                   
-                  // SỬA: Kiểm tra mục đang chọn (để đổi màu)
+                  //Kiểm tra mục đang chọn (để đổi màu)
                   final bool isSelected = (heightValue == _currentHeightCm);
 
-                  // SỬA LỖI: Dùng Stack để Text không bị giới hạn chiều rộng
+                  //ỖI: Dùng Stack để Text không bị giới hạn chiều rộng
                   return Container(
                     width: itemWidth,
                     child: Stack(
@@ -160,9 +160,9 @@ class _HeightStepState extends State<HeightStep> {
                         Positioned(
                           bottom: 23, // Đẩy vạch kẻ lên trên để chừa chỗ cho Text
                           child: Container(
-                            width: isSelected ? 4.0 : 2.0, // SỬA: Tăng độ dày vạch kẻ
+                            width: isSelected ? 4.0 : 2.0, //Tăng độ dày vạch kẻ
                             color: isSelected ? primaryColor : Colors.grey.shade300,
-                            height: isSelected ? 140 : (isMajorTick ? 110 : (isMediumTick ? 95 : 85)), // SỬA: Tăng độ dài vạch kẻ thêm 20
+                            height: isSelected ? 140 : (isMajorTick ? 110 : (isMediumTick ? 95 : 85)), //Tăng độ dài vạch kẻ thêm 20
                           ),
                         ),
                         // Nhãn số (nằm trong Stack)

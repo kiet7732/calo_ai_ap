@@ -159,9 +159,9 @@ class _WeightStepState extends State<WeightStep> {
                         Positioned(
                           bottom: 23, // Đẩy vạch kẻ lên trên để chừa chỗ cho Text
                           child: Container(
-                            width: isSelected ? 4.0 : 2.0, // SỬA: Tăng độ dày vạch kẻ
+                            width: isSelected ? 4.0 : 2.0, //Tăng độ dày vạch kẻ
                             color: isSelected ? primaryColor : Colors.grey.shade300,
-                            height: isSelected ? 140 : (isMajorTick ? 110 : (isMediumTick ? 95 : 85)), // SỬA: Tăng độ dài vạch kẻ thêm 20
+                            height: isSelected ? 140 : (isMajorTick ? 110 : (isMediumTick ? 95 : 85)), //Tăng độ dài vạch kẻ thêm 20
                           ),
                         ),
                         // Nhãn số (nằm trong Stack)

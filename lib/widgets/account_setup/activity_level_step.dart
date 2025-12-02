@@ -84,7 +84,7 @@ class ActivityLevelStep extends StatelessWidget {
             Icon(
               icon,
               size: 40,
-              // SỬA: Sử dụng màu icon được truyền vào
+              //Sử dụng màu icon được truyền vào
               color: isSelected ? primaryColor : iconColor,
             ),
             const SizedBox(width: 16),
