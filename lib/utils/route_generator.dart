@@ -2,16 +2,15 @@ import '../screens/error_screen.dart';
 import 'package:flutter/material.dart';
 import 'app_routes.dart';
 
-// Giả định các màn hình này tồn tại trong thư mục lib/screens/
 import '../screens/splash_screen.dart';
 import '../screens/main_navigator_screen.dart';
-import '../screens/combined_report_history_screen.dart'; // Import the new combined screen
+import '../screens/combined_report_history_screen.dart'; 
 import '../screens/camera_screen.dart';
 import '../screens/history_screen.dart';
 import '../screens/report_screen.dart';
 import '../screens/settings_screen.dart';
-import '../screens/account_setup_screen.dart'; // SỬA: Import màn hình thiết lập tài khoản
-import '../screens/login_screen.dart'; // THÊM: Import màn hình đăng nhập
+import '../screens/account_setup_screen.dart';
+import '../screens/login_screen.dart'; 
 
 /// Lớp quản lý việc tạo và điều hướng giữa các màn hình.
 class RouteGenerator {

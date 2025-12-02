@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 // Import các widget con và provider
-import '../providers/report/report_provider.dart'; // SỬA: Dùng ReportProvider
+import '../providers/report/report_provider.dart'; //Dùng ReportProvider
 import '../widgets/report/calorie_trend_chart.dart';
 import '../widgets/report/macro_distribution_chart.dart'; // FIX: Corrected import path
 import '../providers/report/report_stat_card.dart'; // FIX: Corrected import path

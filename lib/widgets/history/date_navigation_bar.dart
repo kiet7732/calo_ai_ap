@@ -60,7 +60,7 @@ class DateNavigationBar extends StatelessWidget {
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: selectedDate,
-      firstDate: _earliestDate, // SỬA: Dùng ngày giới hạn đã định nghĩa
+      firstDate: _earliestDate,// : Dùng ngày giới hạn đã định nghĩa
       lastDate: DateTime.now(), // Không cho chọn ngày trong tương lai
       builder: (context, child) {
         return Theme(
@@ -98,7 +98,7 @@ class DateNavigationBar extends StatelessWidget {
             icon: Icon(
               Icons.chevron_left,
 
-              // SỬA LỖI: Xóa dấu ngoặc đơn ( và ) ở đây
+              // LỖI: Xóa dấu ngoặc đơn ( và ) ở đây
               color: selectedDate.isAfter(_earliestDate)
                   ? const Color.fromARGB(255, 11, 0, 75)
                   : Colors.grey,

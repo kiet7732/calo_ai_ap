@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../providers/auth/auth_provider.dart';
+import '../utils/app_routes.dart';
 
 import '../widgets/settings/profile_header.dart';
 import '../widgets/settings/settings_group.dart';
@@ -7,6 +9,10 @@ import '../widgets/settings/settings_tile.dart';
 
 import '../providers/account_setup_provider.dart';
 import '../models/sample_meals.dart';
+import '../services/seed_meals_service.dart';
+import '../services/seed_data_service.dart';
+
+
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -32,9 +38,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
     print("Showing picker for $title");
   }
 
+  //logout
   void _showLogoutDialog() {
-    // Logic để hiển thị dialog đăng xuất
-    print("Showing logout dialog");
+    // Hiển thị một AlertDialog để xác nhận
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Đăng xuất'),
+          content: const Text('Bạn có chắc chắn muốn đăng xuất không?'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Hủy'),
+              onPressed: () {
+                Navigator.of(dialogContext).pop(); // Đóng dialog
+              },
+            ),
+            TextButton(
+              child: const Text(
+                'Đăng xuất',
+                style: TextStyle(color: Colors.red),
+              ),
+              onPressed: () async {
+                // Đóng dialog trước
+                Navigator.of(dialogContext).pop();
+
+                // Lấy provider và thực hiện đăng xuất
+                final authProvider = context.read<AuthProvider>();
+                await authProvider.signOut();
+
+                // Điều hướng về màn hình đăng nhập và xóa tất cả các route trước đó
+                if (!mounted) return;
+                Navigator.of(
+                  context,
+                  rootNavigator: true,
+                ).pushNamedAndRemoveUntil(AppRoutes.login, (route) => false);
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -45,7 +89,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     // Logic: Nếu dữ liệu từ provider chưa có (ví dụ: uid rỗng),
     // thì dùng dữ liệu mẫu. Khi có dữ liệu thật, sẽ tự động dùng dữ liệu thật.
     final userProfile = (providerProfile.uid ?? '').isEmpty
-        ? sampleUserProfile : providerProfile;
+        ? sampleUserProfile
+        : providerProfile;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF9F9F9),
@@ -164,6 +209,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ],
           ),
           const SizedBox(height: 17),
+          ElevatedButton(
+            onPressed: () async {
+              await SeedMealsService().seedMealsToFirestore();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Đã tạo dữ liệu lịch sử món ăn!')),
+              );
+            },
+            child: const Text("Tạo Dữ Liệu Món Ăn Mẫu"),
+          ),
+
+          ElevatedButton(
+            onPressed: () async {
+              await SeedDataService().seedCurrentMeals();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Đã thêm dữ liệu hôm nay!')),
+              );
+            },
+            child: const Text("Tạo Dữ Liệu Hôm Nay"),
+          ),
         ],
       ),
     );
