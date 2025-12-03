@@ -25,7 +25,7 @@ class ProfileHeader extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // --- 1. AVATAR VỚI NÚT CHỈNH SỬA ---
+          // --- 1. AVATAR VỚI NÚT CHỈNH---
           Stack(
             clipBehavior: Clip.none, // Cho phép nút nhỏ tràn ra ngoài
             children: [
@@ -46,7 +46,7 @@ class ProfileHeader extends StatelessWidget {
                       : null,
                 ),
               ),
-              // Lớp trên: Nút chỉnh sửa nhỏ
+              // Lớp trên: Nút chỉnhnhỏ
               Positioned(
                 bottom: 0,
                 right: 0,
@@ -84,7 +84,7 @@ class ProfileHeader extends StatelessWidget {
           OutlinedButton.icon(
             onPressed: onEdit,
             icon: const Icon(Icons.edit_square, size: 20),
-            label: const Text('Chỉnh sửa hồ sơ'),
+            label: const Text('Chỉnhhồ sơ'),
             style: OutlinedButton.styleFrom(
               foregroundColor: const Color(0xFFA8D15D),
               side: const BorderSide(color: Color(0xFFA8D15D), width: 1.5),
