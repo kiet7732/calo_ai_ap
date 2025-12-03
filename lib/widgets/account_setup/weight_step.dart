@@ -53,34 +53,41 @@ class _WeightStepState extends State<WeightStep> {
     return "${_currentWeightKg.toStringAsFixed(1)} kg";
   }
 
+  bool _isUserScrolling = false;
+
   void _handleScrollNotification(ScrollNotification notification) {
-    // Mỗi 0.1kg là một index.
-    final centerIndex = (_scrollController.offset / itemWidth).round();
-    final newWeight = minWeightKg + (centerIndex / 10.0);
+    if (notification is UserScrollNotification) {
+      _isUserScrolling = true;
+    }
 
     if (notification is ScrollUpdateNotification) {
+      final newWeight = minWeightKg + ((_scrollController.offset / itemWidth).round() / 10.0);
       if ((_currentWeightKg - newWeight).abs() > 0.01) {
         setState(() {
           _currentWeightKg = newWeight;
         });
       }
     }
-
+    
     if (notification is ScrollEndNotification) {
-      final snapOffset = centerIndex * itemWidth;
-      if ((_scrollController.offset - snapOffset).abs() > 0.1) {
+      if (_isUserScrolling) {
+        _isUserScrolling = false; // Reset cờ
+
+        final centerIndex = (_scrollController.offset / itemWidth).round();
+        final finalWeight = minWeightKg + (centerIndex / 10.0);
+        final snapOffset = centerIndex * itemWidth;
+
         _scrollController.animateTo(
           snapOffset,
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeOut,
         );
-      }
 
-      final finalWeight = minWeightKg + (centerIndex / 10.0);
-      if (widget.isGoalWeight) {
-        context.read<AccountSetupProvider>().updateWeight(goal: finalWeight);
-      } else {
-        context.read<AccountSetupProvider>().updateWeight(current: finalWeight);
+        if (widget.isGoalWeight) {
+          context.read<AccountSetupProvider>().updateWeight(goal: finalWeight);
+        } else {
+          context.read<AccountSetupProvider>().updateWeight(current: finalWeight);
+        }
       }
     }
   }
@@ -152,9 +159,9 @@ class _WeightStepState extends State<WeightStep> {
                         Positioned(
                           bottom: 23, // Đẩy vạch kẻ lên trên để chừa chỗ cho Text
                           child: Container(
-                            width: isSelected ? 4.0 : 2.0, // SỬA: Tăng độ dày vạch kẻ
+                            width: isSelected ? 4.0 : 2.0, //Tăng độ dày vạch kẻ
                             color: isSelected ? primaryColor : Colors.grey.shade300,
-                            height: isSelected ? 140 : (isMajorTick ? 110 : (isMediumTick ? 95 : 85)), // SỬA: Tăng độ dài vạch kẻ thêm 20
+                            height: isSelected ? 140 : (isMajorTick ? 110 : (isMediumTick ? 95 : 85)), //Tăng độ dài vạch kẻ thêm 20
                           ),
                         ),
                         // Nhãn số (nằm trong Stack)
