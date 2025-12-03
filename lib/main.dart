@@ -31,10 +31,10 @@ void main() async { // 1. Chuyển hàm main thành async
         ChangeNotifierProxyProvider<HistoryProvider, ReportProvider>(
           create: (_) => ReportProvider(),
           update: (_, history, previousReport) =>
-              previousReport!..updateMeals(history.allMeals),
+              previousReport!..updateDailyStats(history.dailyStats),
         ),
         ChangeNotifierProvider(create: (context) => AccountSetupProvider()),
-        // SỬA: Thêm AuthProvider vào đây để toàn bộ ứng dụng có thể truy cập
+        // Thêm AuthProvider vào đây để toàn bộ ứng dụng có thể truy cập
         ChangeNotifierProvider(create: (context) => AuthProvider()),
       ],
 
@@ -62,8 +62,8 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
         useMaterial3: true,
       ),
-      // SỬA: Thay đổi route ban đầu để vào màn hình thiết lập tài khoản
-      initialRoute: AppRoutes.login,
+      // Đặt route ban đầu là Splash Screen để kiểm tra trạng thái đăng nhập
+      initialRoute: AppRoutes.splash,
       onGenerateRoute: RouteGenerator.generateRoute,
     );
   }

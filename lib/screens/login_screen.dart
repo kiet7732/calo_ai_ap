@@ -27,36 +27,25 @@ class _LoginScreenState extends State<LoginScreen> {
     // Kiểm tra widget còn tồn tại trước khi thực hiện các hành động bất đồng bộ
     if (!mounted) return;
 
-    switch (result) {
-      case AuthStatus.successNewUser:
-        // Điều hướng đến màn hình thiết lập tài khoản cho người dùng mới
-        Navigator.of(context)
-            .pushNamedAndRemoveUntil(AppRoutes.accountSetup, (route) => false);
-        break;
-      case AuthStatus.successOldUser:
-        // Điều hướng đến màn hình chính cho người dùng cũ
-        Navigator.of(context)
-            .pushNamedAndRemoveUntil(AppRoutes.main, (route) => false);
-        break;
-      case AuthStatus.error:
-        // Hiển thị SnackBar nếu có lỗi
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(authProvider.errorMessage ?? "Đã có lỗi xảy ra.")),
-        );
-        break;
-    }
+    // Gọi hàm điều hướng chung từ AuthProvider
+    authProvider.navigateOnAuthStatus(context, result);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SafeArea( // Giữ SafeArea để nội dung không bị che bởi notch/thanh trạng thái
-        child: SingleChildScrollView( // Bọc trong SingleChildScrollView để cho phép cuộn
+      body: SafeArea(
+        // Giữ SafeArea để nội dung không bị che bởi notch/thanh trạng thái
+        child: SingleChildScrollView(
+          // Bọc trong SingleChildScrollView để cho phép cuộn
           child: ConstrainedBox(
             // Đảm bảo nội dung chiếm ít nhất toàn bộ chiều cao màn hình
             constraints: BoxConstraints(
-              minHeight: MediaQuery.of(context).size.height - MediaQuery.of(context).padding.top - MediaQuery.of(context).padding.bottom,
+              minHeight:
+                  MediaQuery.of(context).size.height -
+                  MediaQuery.of(context).padding.top -
+                  MediaQuery.of(context).padding.bottom,
             ),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -70,7 +59,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     builder: (context, auth, child) {
                       return auth.isLoading
                           ? const CircularProgressIndicator(
-                              valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                primaryColor,
+                              ),
                             )
                           : child!;
                     },
@@ -78,7 +69,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 24),
                   _buildTermsText(),
-                  //const SizedBox(height: 40), 
+                  //const SizedBox(height: 40),
                 ],
               ),
             ),
@@ -93,7 +84,6 @@ class _LoginScreenState extends State<LoginScreen> {
     final screenHeight = MediaQuery.of(context).size.height;
     return Column(
       children: [
-
         //animation
         Lottie.asset(
           'assets/animations/Intro_app.json',
