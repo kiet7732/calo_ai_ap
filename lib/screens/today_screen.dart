@@ -202,7 +202,7 @@ class TodayScreen extends StatelessWidget {
                             onPressed: () {
                               // Gọi hàm callback để chuyển đến tab Nhật ký (index = 1)
                               // mà không cần push màn hình mới.
-                              onNavigate(1);
+                              onNavigate(2);
                             },
                             child: const Text(
                               'Xem tất cả',
@@ -228,12 +228,13 @@ class TodayScreen extends StatelessWidget {
                                   final item = record.$2;
                                   return Padding(
                                     padding: const EdgeInsets.only(bottom: 8.0),
+
                                     child: MealItemTile(
                                       // Giả lập một đối tượng Meal để tương thích với MealItemTile
                                       // Bạn có thểealItemTile để nhận FoodItem và mealType
                                       meal: Meal(
                                         id: entry.id, name: item.name, date: entry.createdAt,
-                                        calories: item.calories.toInt(), emoji: '🍲', protein: item.protein.toInt(),
+                                        calories: item.calories.toInt(), emoji: item.idIcon, protein: item.protein.toInt(),
                                         carbs: item.carbs.toInt(), fat: item.fat.toInt()
                                       ),
                                     ),
