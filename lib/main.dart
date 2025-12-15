@@ -12,7 +12,8 @@ import '../providers/account_setup_provider.dart';
 import 'firebase_options.dart';
 import '../services/notification_service.dart'; 
 import '../providers/notification_settings_provider.dart'; 
-
+import 'services/gemini_service.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 void main() async { 
   
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,7 +27,15 @@ void main() async {
   await notificationService.initialize();
   await notificationService.requestPermissions();
   
-  
+  // Đảm bảo Flutter đã được khởi tạo
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Tải các biến môi trường từ file .env.local
+  await dotenv.load(fileName: ".env.local");
+
+  // 2. KHẮC PHỤC: Khởi tạo Gemini Service trước khi chạy app
+  GeminiService.initialize();
+
   runApp(
     // 1. Dùng MultiProvider để bọc ứng dụng
     MultiProvider(

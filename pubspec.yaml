@@ -50,6 +50,12 @@ dependencies:
   awesome_notifications: ^0.10.1
   timezone: ^0.10.1
   flutter_launcher_icons: ^0.14.4
+  image_picker: ^1.2.1
+  camera: ^0.11.3
+  flutter_gemini: ^3.0.0
+  flutter_dotenv: ^6.0.0 # THÊM: Thư viện quản lý biến môi trường
+  flutter_image_compress: ^2.4.0 # THÊM: Thư viện nén ảnh
+  path_provider: ^2.1.5
 
 dev_dependencies:
   flutter_test:
@@ -75,6 +81,7 @@ flutter:
 
   assets:
     - assets/animations/
+    - .env.local # THÊM: Khai báo file env để Flutter có thể truy cập
     #- assets/images/
   # To add assets to your application, add an assets section, like this:
   # assets:

@@ -8,6 +8,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import '../models/food_item.dart';
 import '../models/meal_entry.dart';
+import '../models/meal_analysis_result.dart';
 
 
 
@@ -208,6 +209,42 @@ class TodayStatsProvider extends ChangeNotifier {
     } catch (e) {
       if (kDebugMode) print("[Provider] Error adding meal entry: $e");
     }
+  }
+
+  /// Hàm dùng chung để lưu kết quả phân tích món ăn vào Firestore.
+  /// Tự động xác định bữa ăn (Sáng/Trưa/Tối) dựa trên giờ hiện tại.
+  Future<void> addAnalyzedMeal(MealAnalysisResult result) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    // 1. Xác định loại bữa ăn theo giờ
+    final hour = DateTime.now().hour;
+    String mealType = 'snack';
+    if (hour >= 6 && hour < 11) mealType = 'breakfast';
+    else if (hour >= 11 && hour < 15) mealType = 'lunch';
+    else if (hour >= 15 && hour < 21) mealType = 'dinner';
+
+    // 2. Chuẩn bị dữ liệu item (theo cấu trúc của MealEntry)
+    final total = result.totalNutrition;
+    final newItem = {
+      'name': result.foodName ?? "Món ăn",
+      'calories': total.calories,
+      'protein': total.protein,
+      'carbs': total.carbs,
+      'fat': total.fat,
+      'quantity': 1,
+      'unit': 'phần',
+      'idIcon': '🍽️', 
+    };
+
+    // 3. Đẩy lên Firestore
+    await _firestore.collection('users').doc(user.uid).collection('current_meals').add({
+      'mealType': mealType,
+      'createdAt': FieldValue.serverTimestamp(),
+      'items': [newItem], // Lưu dưới dạng mảng items để tính toán đúng
+    });
+    
+    if (kDebugMode) print("[Provider] Added analyzed meal: ${result.foodName} ($mealType)");
   }
 
   /// Dọn dẹp dữ liệu và hủy các stream khi người dùng đăng xuất.

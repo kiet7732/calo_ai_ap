@@ -5,9 +5,8 @@ import 'app_routes.dart';
 import '../screens/splash_screen.dart';
 import '../screens/main_navigator_screen.dart';
 import '../screens/combined_report_history_screen.dart'; 
-import '../screens/camera_screen.dart';
+import '../screens/food_camera_screen.dart';
 import '../screens/history_screen.dart';
-import '../screens/report_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/account_setup_screen.dart';
 import '../screens/login_screen.dart'; 
@@ -27,7 +26,7 @@ class RouteGenerator {
         return MaterialPageRoute(builder: (_) => const MainNavigatorScreen());
 
       case AppRoutes.camera:
-        return MaterialPageRoute(builder: (_) => const CameraScreen());
+        return MaterialPageRoute(builder: (_) => const FoodCameraScreen());
 
       case AppRoutes.history:
         return MaterialPageRoute(builder: (_) => const HistoryScreen());
