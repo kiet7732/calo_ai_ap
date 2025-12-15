@@ -58,13 +58,24 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
     }
   }
 
-  void _completeSetup() {
-    print("Account setup completed! Nextpage");
-    // Điều hướng đến màn hình chính và xóa tất cả các route trước đó
-    Navigator.of(
-      context,
-      rootNavigator: true,
-    ).pushNamedAndRemoveUntil(AppRoutes.main, (Route<dynamic> route) => false);
+  //Cập nhật hàm _completeSetup để lưu dữ liệu trước khi điều hướng
+  void _completeSetup() async {
+    final provider = context.read<AccountSetupProvider>();
+    final success = await provider.saveUserProfileToFirestore();
+
+    if (!mounted) return; // Kiểm tra widget còn tồn tại
+
+    if (success) {
+      print("Account setup completed! Navigating to main screen.");
+      // Điều hướng đến màn hình chính và xóa tất cả các route trước đó
+      Navigator.of(context, rootNavigator: true)
+          .pushNamedAndRemoveUntil(AppRoutes.main, (route) => false);
+    } else {
+      // Hiển thị thông báo lỗi nếu không lưu được
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Không thể lưu hồ sơ. Vui lòng thử lại.")),
+      );
+    }
   }
 
   @override

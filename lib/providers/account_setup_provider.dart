@@ -1,6 +1,8 @@
 // lib/providers/account_setup_provider.dart
 import 'package:flutter/material.dart';
 import '../models/user_profile.dart'; 
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
 import '../utils/calorie_calculator.dart'; //Import lớp tiện ích tính toán
 
@@ -56,6 +58,13 @@ class AccountSetupProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Cập nhật chiều cao mà không thông báo cho các listener.
+  /// Dùng cho sự kiện `onChanged` của Slider để tránh lag.
+  void updateHeightSilently(int height) {
+    _userProfile = _userProfile.copyWith(height: height);
+    // Không gọi notifyListeners() ở đây
+  }
+
   void updateWeight({double? current, double? goal}) {
     _userProfile = _userProfile.copyWith(currentWeight: current, goalWeight: goal);
     if (current != null) {
@@ -66,6 +75,14 @@ class AccountSetupProvider extends ChangeNotifier {
     }
     notifyListeners();
   }
+
+  /// Cập nhật cân nặng mà không thông báo cho các listener.
+  /// Dùng cho sự kiện `onChanged` của Slider để tránh lag.
+  void updateWeightSilently({double? current, double? goal}) {
+    _userProfile = _userProfile.copyWith(currentWeight: current, goalWeight: goal);
+    // Không gọi notifyListeners() ở đây
+  }
+
 
   void updateActivityLevel(ActivityLevel level) {
     _userProfile = _userProfile.copyWith(activityLevel: level);
@@ -138,6 +155,69 @@ class AccountSetupProvider extends ChangeNotifier {
     print("Prediction: ${predictionResult.weeksToGoal} weeks to reach goal on ${predictionResult.targetDate}");
     print("----------------------------------");
 
-    // TODO: Lưu _userProfile lên Firebase
+    // BỎ TODO: Việc lưu sẽ được thực hiện ở hàm riêng
+  }
+
+  // --- 5. HÀM LƯU DỮ LIỆU LÊN FIRESTORE ---.
+  Future<bool> saveUserProfileToFirestore() async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) {
+        throw Exception("Người dùng chưa đăng nhập. Không thể lưu dữ liệu.");
+      }
+
+      // Cập nhật _userProfile với thông tin từ Auth
+      _userProfile = _userProfile.copyWith(
+        uid: currentUser.uid,
+        email: currentUser.email,
+        displayName: currentUser.displayName,
+      );
+
+      // 1. Chuẩn bị WriteBatch
+      final batch = FirebaseFirestore.instance.batch();
+
+      // 2. Chuẩn bị dữ liệu và vị trí lưu cho PHẦN HỒ SƠ
+      final userDocRef = FirebaseFirestore.instance.collection('users').doc(currentUser.uid);
+      final profileData = {
+        'uid': _userProfile.uid,
+        'email': _userProfile.email,
+        'displayName': _userProfile.displayName,
+        'photoUrl': currentUser.photoURL,
+        'height': _userProfile.height,
+        'currentWeight': _userProfile.currentWeight,
+        'goalWeight': _userProfile.goalWeight,
+        'dateOfBirth': Timestamp.fromDate(_userProfile.dateOfBirth),
+        'gender': _userProfile.gender.name,
+        'activityLevel': _userProfile.activityLevel.name,
+        'setupComplete': true, // Đánh dấu đã hoàn tất thiết lập
+        'createdAt': FieldValue.serverTimestamp(), // Thêm thời gian tạo
+      };
+      batch.set(userDocRef, profileData, SetOptions(merge: true)); // Dùng merge để an toàn
+
+      // 3. Chuẩn bị dữ liệu và vị trí lưu cho PHẦN MỤC TIÊU
+      final goalDocRef = userDocRef.collection('goals').doc('current');
+      final goalData = {
+        'calorieGoal': _userProfile.calorieGoal,
+        'proteinGoal': _userProfile.proteinGoal,
+        'carbGoal': _userProfile.carbGoal,
+        'fatGoal': _userProfile.fatGoal,
+      };
+      batch.set(goalDocRef, goalData);
+
+      // 4. Thực thi batch
+      await batch.commit();
+
+      print("✅ SUCCESS: User profile and goals saved atomically for UID: ${currentUser.uid}");
+      return true; // Trả về true nếu thành công
+    } catch (e) {
+      print("❌ ERROR saving user profile and goals to Firestore: $e");
+      return false; // Trả về false nếu có lỗi
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 }
