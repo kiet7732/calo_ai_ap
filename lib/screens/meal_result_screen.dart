@@ -341,7 +341,7 @@ class _MealResultScreenState extends State<MealResultScreen> {
           Icon(icon, color: color, size: 24),
           const SizedBox(height: 8),
           Text(
-            "${value.round()}$unit",
+            "${value.toStringAsFixed(1)}$unit",
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
           ),
           Text(

@@ -181,6 +181,13 @@ class TodayStatsProvider extends ChangeNotifier {
       _consumedCarbs += entry.items.fold(0.0, (sum, item) => sum + (item.carbs * item.quantity));
       _consumedFat += entry.items.fold(0.0, (sum, item) => sum + (item.fat * item.quantity));
     } // Thông báo cho UI cập nhật
+
+    // Làm tròn đến 1 chữ số thập phân (ví dụ: 10.5)
+    _consumedCalories = double.parse(_consumedCalories.toStringAsFixed(1));
+    _consumedProtein = double.parse(_consumedProtein.toStringAsFixed(1));
+    _consumedCarbs = double.parse(_consumedCarbs.toStringAsFixed(1));
+    _consumedFat = double.parse(_consumedFat.toStringAsFixed(1));
+
     if (kDebugMode) print("[Provider] Today's totals recalculated.");
     notifyListeners();
   }
