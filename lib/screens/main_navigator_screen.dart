@@ -41,20 +41,22 @@ class _MainNavigatorScreenState extends State<MainNavigatorScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bool showFab = _selectedIndex != 1; // Ẩn nút Camera khi ở tab Chat (index 1)
+
     return Scaffold(
       // Hiển thị màn hình được chọn từ danh sách
       body: IndexedStack(index: _selectedIndex, children: _widgetOptions),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: showFab ? FloatingActionButton(
         onPressed: () {
           Navigator.of(context).pushNamed(AppRoutes.camera);
         },
         backgroundColor: primaryColor,
         shape: const CircleBorder(),
         child: const Icon(Icons.camera_alt, color: Colors.white),
-      ),
+      ) : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: BottomAppBar(
-        shape: const CircularNotchedRectangle(),
+        shape: showFab ? const CircularNotchedRectangle() : null,
         notchMargin: 8.0,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -66,12 +68,12 @@ class _MainNavigatorScreenState extends State<MainNavigatorScreen> {
               label: 'Hôm nay',
             ),
             _buildTabItem(
-              index: 1, // Vị trí của nút "Nhật ký" cũ
-              activeIcon: Icons.chat, // Icon mới cho Chat Box
-              icon: Icons.chat_outlined, // Icon mới cho Chat Box
-              label: 'Chat Box', // Nhãn mới
+              index: 1, 
+              activeIcon: Icons.chat, 
+              icon: Icons.chat_outlined, 
+              label: 'Chat Box', 
             ),
-            const SizedBox(width: 40), // Khoảng trống cho FAB
+            if (showFab) const SizedBox(width: 40), // Khoảng trống cho FAB
             _buildTabItem(
               index: 2,
               activeIcon: Icons.bar_chart,
