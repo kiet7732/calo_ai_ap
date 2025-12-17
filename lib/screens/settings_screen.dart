@@ -1,20 +1,23 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter/cupertino.dart';
 import '../providers/auth/auth_provider.dart';
 import '../utils/app_routes.dart';
-
-import '../widgets/settings/profile_header.dart';
+import '../widgets/settings/user_profile_display.dart';
 import '../widgets/settings/settings_group.dart';
 import '../widgets/settings/settings_tile.dart';
-
-import '../providers/account_setup_provider.dart';
-import '../models/sample_meals.dart';
-import '../services/seed_meals_service.dart';
-import '../services/seed_data_service.dart';
-import '../providers/notification_settings_provider.dart';
-import '../services/notification_service.dart'; // THÊM DÒNG NÀY
-
+import '../widgets/settings/notification_settings_section.dart';
+import '../widgets/settings/developer_settings_section.dart';
+import '../providers/user_provider.dart';
+import '../widgets/settings/edit_value_bottom_sheet.dart';
+import '../widgets/settings/new_goal_dialog.dart'; 
+import '../widgets/settings/unit_picker_bottom_sheet.dart'; 
+import '../widgets/settings/activity_level_bottom_sheet.dart';
+import '../widgets/settings/edit_profile_bottom_sheet.dart'; // Import widget mới
+import '../models/user_profile.dart'; // Import để dùng Gender
+import '../services/CloudinaryService.dart'; // Import service upload
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -26,63 +29,9 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   // Giữ nguyên state của màn hình
   bool _isDarkMode = false; // Thêm state cho giao diện tối
-
-  /// VIẾT LẠI: Hiển thị bottom sheet để chọn giờ.
-  void _showTimePicker({
-    required BuildContext context,
-    required TimeOfDay initialTime,
-    required ValueChanged<TimeOfDay> onTimeChanged,
-  }) {
-    TimeOfDay newTime = initialTime;
-
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      backgroundColor: Colors.white,
-      builder: (BuildContext builder) {
-        return SizedBox(
-          height: 280,
-          child: Column(
-            children: [
-              // Thanh công cụ với nút Hủy và Lưu
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                decoration: BoxDecoration(
-                  border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    CupertinoButton(
-                      child: const Text('Hủy'),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                    CupertinoButton(
-                      child: const Text('Lưu', style: TextStyle(fontWeight: FontWeight.bold)),
-                      onPressed: () {
-                        onTimeChanged(newTime);
-                        Navigator.of(context).pop();
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: CupertinoDatePicker(
-                  mode: CupertinoDatePickerMode.time,
-                  initialDateTime: DateTime(DateTime.now().year, 1, 1, initialTime.hour, initialTime.minute),
-                  onDateTimeChanged: (DateTime dt) => newTime = TimeOfDay.fromDateTime(dt),
-                  use24hFormat: true,
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
+  String _weightUnit = 'kg'; // Mặc định hiển thị
+  String _heightUnit = 'cm'; // Mặc định hiển thị
+  bool _isUploadingAvatar = false; // State quản lý loading khi upload avatar
 
   //logout
   void _showLogoutDialog() {
@@ -127,14 +76,106 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  /// Hàm helper để gọi BottomSheet widget mới
+  void _showEditSheet({
+    required BuildContext context,
+    required String title,
+    required double currentValue,
+    required String unit,
+    required double min,
+    required double max,
+    required bool isInt,
+    required Function(double) onSave,
+  }) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      backgroundColor: Colors.white,
+      builder: (context) => EditValueBottomSheet(
+        title: title,
+        initialValue: currentValue,
+        unit: unit,
+        min: min,
+        max: max,
+        isInt: isInt,
+        onSave: onSave,
+      ),
+    );
+  }
+
+  /// Xử lý chọn ảnh và upload
+  Future<void> _handleAvatarEdit(UserProvider userProvider) async {
+    final ImagePicker picker = ImagePicker();
+    
+    // 1. Hiển thị BottomSheet chọn nguồn ảnh
+    final ImageSource? source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt, color: Colors.blue),
+                title: const Text('Chụp ảnh mới'),
+                onTap: () => Navigator.pop(ctx, ImageSource.camera),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library, color: Colors.purple),
+                title: const Text('Chọn từ thư viện'),
+                onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (source == null) return; // Người dùng hủy chọn
+
+    try {
+      // 2. Pick ảnh (Đưa vào try-catch để bắt lỗi quyền truy cập)
+      final XFile? image = await picker.pickImage(source: source, imageQuality: 80);
+      if (image == null) return;
+
+      // 3. Bắt đầu upload
+      setState(() => _isUploadingAvatar = true);
+
+      final String? secureUrl = await CloudinaryService().uploadImage(File(image.path));
+      
+      if (secureUrl != null && mounted) {
+        await userProvider.updateAvatar(secureUrl);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Cập nhật ảnh đại diện thành công!")));
+        }
+      }
+    } on PlatformException catch (e) {
+      // Bắt lỗi PlatformException riêng (ví dụ lỗi channel, lỗi quyền hạn từ native)
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text("Lỗi hệ thống ảnh: ${e.message}. Vui lòng khởi động lại ứng dụng."),
+          backgroundColor: Colors.red,
+        ));
+      }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Đã xảy ra lỗi: $e")));
+    } finally {
+      if (mounted) setState(() => _isUploadingAvatar = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // SỬ DỤNG CONSUMER ĐỂ LẮNG NGHE THAY ĐỔI
-    return Consumer<NotificationSettingsProvider>(
-      builder: (context, notificationSettings, child) {
-        final accountProvider = context.watch<AccountSetupProvider>();
-        final userProfile = (accountProvider.userProfile.uid ?? '').isEmpty
-            ? sampleUserProfile : accountProvider.userProfile;
+    // Lấy UserProvider để thực hiện hành động update
+    final userProvider = context.read<UserProvider>();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF9F9F9),
@@ -142,66 +183,184 @@ class _SettingsScreenState extends State<SettingsScreen> {
         title: const Text('Cài đặt'),
         automaticallyImplyLeading: false,
         backgroundColor: Colors.white,
-        elevation: 1,
+        // elevation: 1,
       ),
       body: ListView(
         children: [
-          ProfileHeader(
-            name: userProfile.displayName ?? "Người dùng mới",
-            email: userProfile.email ?? "chưa có email",
-          ),
+          
+          UserProfileDisplay(
+            weightUnit: _weightUnit, 
+            heightUnit: _heightUnit,
+            isUploading: _isUploadingAvatar,
+            onEditAvatar: () {
+              _handleAvatarEdit(userProvider);
+            },
+            onEditName: () {
+              final currentProfile = userProvider.userProfile;
+              if (currentProfile == null) return;
 
-          SettingsGroup(
-            title: 'Tài khoản',
-            children: [
-              SettingsTile(
-                icon: Icons.person_outline,
-                iconColor: Colors.blue,
-                title: 'Chỉnh sửa hồ sơ',
-                onTap: () {},
-              ),
-              // SettingsTile(
-              //   icon: Icons.shield_outlined,
-              //   iconColor: Colors.green,
-              //   title: 'Bảo mật',
-              //   onTap: () {},
-              // ),
-            ],
-          ),
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                ),
+                backgroundColor: Colors.white,
+                builder: (context) => EditProfileBottomSheet(
+                  initialDisplayName: currentProfile.displayName,
+                  initialGender: currentProfile.gender,
+                  initialDob: currentProfile.dateOfBirth,
+                  onSave: (name, gender, dob) async {
+                    // Kiểm tra xem có thay đổi gì không
+                    if (name == currentProfile.displayName && gender == currentProfile.gender && dob == currentProfile.dateOfBirth) return;
 
-          SettingsGroup(
-            title: 'Thông báo',
-            children: [
-              _buildNotificationTile(
-                context: context,
-                title: 'Nhắc nhở bữa ăn',
-                icon: Icons.restaurant_menu,
-                iconColor: Colors.orange,
-                value: notificationSettings.mealReminders,
-                time: notificationSettings.mealReminderTime,
-                onToggle: (value) => notificationSettings.toggleMealReminder(value),
-                onTimeTap: () => _showTimePicker(
-                  context: context,
-                  initialTime: notificationSettings.mealReminderTime,
-                  onTimeChanged: (newTime) => notificationSettings.updateMealReminderTime(newTime),
+                    final newPlan = await userProvider.updateUserProfile({
+                      'displayName': name,
+                      'gender': gender.name,
+                      'dateOfBirth': dob.toIso8601String(),
+                    });
+
+                    if (newPlan != null && context.mounted) {
+                      showNewGoalDialog(context, newPlan);
+                    }
+                  },
                 ),
-              ),
-              _buildNotificationTile(
+              );
+            },
+            //cac tham so ng dung
+            onEditHeight: () {
+              final currentProfile = userProvider
+                  .userProfile; // Lấy dữ liệu mới nhất tại thời điểm bấm
+              if (currentProfile == null) return;
+              
+              // Logic quy đổi hiển thị cho Chiều cao
+              double valToShow = currentProfile.height.toDouble();
+              double min = 100;
+              double max = 250;
+              bool isInt = true;
+
+              if (_heightUnit == 'ft') {
+                valToShow = valToShow * 0.0328084; // cm -> ft
+                min = 3.0; max = 8.5; // Giới hạn slider theo ft
+                isInt = false;
+              }
+
+              //dùng Sheet mới
+              _showEditSheet(
                 context: context,
-                title: 'Nhắc nhở uống nước',
-                icon: Icons.water_drop_outlined,
-                iconColor: Colors.lightBlue,
-                value: notificationSettings.waterReminders,
-                time: notificationSettings.waterReminderTime,
-                onToggle: (value) => notificationSettings.toggleWaterReminder(value),
-                onTimeTap: () => _showTimePicker(
-                  context: context,
-                  initialTime: notificationSettings.waterReminderTime,
-                  onTimeChanged: (newTime) => notificationSettings.updateWaterReminderTime(newTime),
-                ),
-              ),
-            ],
+                title: "Cập nhật Chiều cao",
+                currentValue: valToShow,
+                unit: _heightUnit,
+                min: min,
+                max: max,
+                isInt: isInt,
+                onSave: (val) async {
+                  // Logic quy đổi ngược lại để lưu (ft -> cm)
+                  int heightToSave = (_heightUnit == 'ft') ? (val / 0.0328084).round() : val.toInt();
+
+                  if (heightToSave == currentProfile.height) return; // Không thay đổi thì thoát
+
+                  final newPlan = await userProvider.updateUserProfile({
+                    'height': heightToSave,
+                  });
+                  if (newPlan != null && context.mounted) {
+                    showNewGoalDialog(context, newPlan);
+                  }
+                },
+              );
+            },
+            onEditWeight: () {
+              final currentProfile = userProvider.userProfile;
+              if (currentProfile == null) return;
+
+              // Logic quy đổi hiển thị cho Cân nặng
+              double valToShow = currentProfile.currentWeight;
+              double min = 30; double max = 200;
+
+              if (_weightUnit == 'lbs') {
+                valToShow = valToShow * 2.20462; // kg -> lbs
+                min = 66; max = 440; // Giới hạn slider theo lbs
+              }
+
+              _showEditSheet(
+                context: context,
+                title: "Cập nhật Cân nặng",
+                currentValue: valToShow,
+                unit: _weightUnit,
+                min: min,
+                max: max,
+                isInt: false,
+                onSave: (val) async {
+                  // Logic quy đổi ngược lại để lưu (lbs -> kg)
+                  double weightToSave = (_weightUnit == 'lbs') ? (val / 2.20462) : val;
+                  // Làm tròn 1 số thập phân để so sánh chính xác
+                  weightToSave = double.parse(weightToSave.toStringAsFixed(1));
+
+                  if (weightToSave == currentProfile.currentWeight) return; // Không thay đổi thì thoát
+
+                  final newPlan = await userProvider.updateUserProfile({
+                    'currentWeight': weightToSave,
+                  });
+                  if (newPlan != null && context.mounted) {
+                    showNewGoalDialog(context, newPlan);
+                  }
+                },
+              );
+            },
+            onEditGoal: () {
+              final currentProfile = userProvider.userProfile;
+              if (currentProfile == null) return;
+
+              // Logic quy đổi hiển thị cho Mục tiêu
+              double valToShow = currentProfile.goalWeight;
+              double min = 30; double max = 200;
+
+              if (_weightUnit == 'lbs') {
+                valToShow = valToShow * 2.20462; // kg -> lbs
+                min = 66; max = 440;
+              }
+
+              _showEditSheet(
+                context: context,
+                title: "Cập nhật Mục tiêu",
+                currentValue: valToShow,
+                unit: _weightUnit,
+                min: min,
+                max: max,
+                isInt: false,
+                onSave: (val) async {
+                  // Logic quy đổi ngược lại để lưu (lbs -> kg)
+                  double weightToSave = (_weightUnit == 'lbs') ? (val / 2.20462) : val;
+                  // Làm tròn 1 số thập phân để so sánh chính xác
+                  weightToSave = double.parse(weightToSave.toStringAsFixed(1));
+
+                  if (weightToSave == currentProfile.goalWeight) return; // Không thay đổi thì thoát
+
+                  final newPlan = await userProvider.updateUserProfile({
+                    'goalWeight': weightToSave,
+                  });
+                  if (newPlan != null && context.mounted) {
+                    showNewGoalDialog(context, newPlan);
+                  }
+                },
+              );
+            },
+            onEditActivity: () {
+              showActivityLevelBottomSheet(
+                context,
+                onSelect: (level) async {
+                  final newPlan = await userProvider.updateUserProfile({'activityLevel': level.name});
+                  if (newPlan != null && context.mounted) {
+                    showNewGoalDialog(context, newPlan);
+                  }
+                },
+              );
+            },
           ),
+        //end sheet
+        
+          // --- PHẦN THÔNG BÁO ) ---
+          const NotificationSettingsSection(),
 
           SettingsGroup(
             title: 'Chung',
@@ -210,15 +369,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 icon: Icons.monitor_weight_outlined,
                 iconColor: Colors.purple,
                 title: 'Đơn vị cân nặng',
-                //trailing: Text(userProfile.weightUnit ?? 'kg', style: TextStyle(color: Colors.grey.shade600, fontSize: 16)),
-                onTap: () { /* Logic chọn đơn vị */ },
+                trailing: Text(_weightUnit, style: TextStyle(color: Colors.grey.shade600, fontSize: 16)),
+                onTap: () {
+                  showUnitPicker(
+                    context,
+                    title: 'Chọn đơn vị cân nặng',
+                    options: ['kg', 'lbs'],
+                    currentValue: _weightUnit,
+                    onSelected: (val) => setState(() => _weightUnit = val),
+                  );
+                },
               ),
               SettingsTile(
                 icon: Icons.height,
                 iconColor: Colors.teal,
                 title: 'Đơn vị chiều cao',
-                //trailing: Text(userProfile.heightUnit ?? 'cm', style: TextStyle(color: Colors.grey.shade600, fontSize: 16)),
-                onTap: () { /* Logic chọn đơn vị */ },
+                trailing: Text(_heightUnit, style: TextStyle(color: Colors.grey.shade600, fontSize: 16)),
+                onTap: () {
+                  showUnitPicker(
+                    context,
+                    title: 'Chọn đơn vị chiều cao',
+                    options: ['cm', 'ft'],
+                    currentValue: _heightUnit,
+                    onSelected: (val) => setState(() => _heightUnit = val),
+                  );
+                },
               ),
               SettingsTile(
                 icon: Icons.brightness_6_outlined,
@@ -245,106 +420,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ],
           ),
           const SizedBox(height: 17),
-          ElevatedButton(
-            onPressed: () async {
-              await SeedMealsService().seedMealsToFirestore();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Đã tạo dữ liệu lịch sử món ăn!')),
-              );
-            },
-            child: const Text("Tạo Dữ Liệu Món Ăn Mẫu"),
-          ),
 
-          ElevatedButton(
-            onPressed: () async {
-              await SeedDataService().seedCurrentMeals();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Đã thêm dữ liệu hôm nay!')),
-              );
-            },
-            child: const Text("Tạo Dữ Liệu Hôm Nay"),
-          ),
-          const SizedBox(height: 20),
-          // --- KHU VỰC TEST THÔNG BÁO ---
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Column(
-              children: [
-                Text("--- Dành cho nhà phát triển ---", style: TextStyle(color: Colors.grey.shade600)),
-                const SizedBox(height: 8),
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent, foregroundColor: Colors.white),
-                  onPressed: () {
-                    context.read<NotificationService>().scheduleRepeatedTestNotification();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Đã bắt đầu gửi thông báo test mỗi 15 giây.')),
-                    );
-                  },
-                  icon: const Icon(Icons.play_circle_fill),
-                  label: const Text("Bắt đầu Test thông báo liên tục"),
-                ),
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, foregroundColor: Colors.white),
-                  onPressed: () {
-                    context.read<NotificationService>().cancelTestNotification();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Đã dừng gửi thông báo test.')),
-                    );
-                  },
-                  icon: const Icon(Icons.stop_circle),
-                  label: const Text("Dừng Test thông báo"),
-                ),
-              ],
-            ),
-          ),
+          // --- PHẦN DEVELOPER test data user ---
+          const DeveloperSettingsSection(),
+          //end
         ],
       ),
-    );
-      },
-    );
-  }
-
-  /// VIẾT LẠI: Widget helper để xây dựng một dòng cài đặt thông báo.
-  Widget _buildNotificationTile({
-    required BuildContext context,
-    required String title,
-    required IconData icon,
-    required Color iconColor,
-    required bool value,
-    required TimeOfDay time,
-    required ValueChanged<bool> onToggle,
-    required VoidCallback onTimeTap,
-  }) {
-    return SettingsTile(
-      icon: icon,
-      iconColor: value ? iconColor : Colors.grey.shade400,
-      title: title,
-      onTap: onTimeTap, // Nhấn vào cả dòng để mở time picker
-      customTrailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Text hiển thị giờ
-            Text(
-              time.format(context),
-              style: TextStyle(
-                color: value ? Colors.grey.shade700 : Colors.grey.shade400,
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(width: 12),
-            // Công tắc Bật/Tắt
-            Transform.scale(
-              scale: 0.8,
-              child: Switch(
-                value: value,
-                onChanged: onToggle,
-                activeColor: const Color(0xFFA8D15D),
-                inactiveTrackColor: Colors.grey.shade300,
-              ),
-            ),
-          ],
-        ),
     );
   }
 }

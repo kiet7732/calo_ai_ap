@@ -116,7 +116,7 @@ class AuthProvider with ChangeNotifier {
           'uid': user.uid,
           'email': user.email,
           'displayName': user.displayName,
-          'photoUrl': user.photoURL,
+          'photoUrl': "https://res.cloudinary.com/dk0dn25hc/image/upload/v1765985555/Pngtree_calories_8619235_bcj6ye.png",
           'createdAt': FieldValue.serverTimestamp(),
           'setupComplete': false, // Quan trọng!
         });
