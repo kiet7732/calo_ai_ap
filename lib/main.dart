@@ -9,6 +9,13 @@ import '../providers/history_provider.dart';
 import '../providers/auth/auth_provider.dart';
 import '../providers/report/report_provider.dart';
 import '../providers/account_setup_provider.dart';
+import '../providers/chat_provider.dart';
+import 'firebase_options.dart';
+import 'package:flutter_gemini/flutter_gemini.dart'; 
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
+void main() async { // 1. Chuyển hàm main thành async
+  // 2. Đảm bảo các binding của Flutter đã sẵn sàng
 import '../providers/user_provider.dart';
 import 'firebase_options.dart';
 import '../services/notification_service.dart'; 
@@ -37,6 +44,11 @@ void main() async {
   // 2. KHẮC PHỤC: Khởi tạo Gemini Service trước khi chạy app
   GeminiService.initialize();
 
+  // Tải các biến môi trường từ file .env.local
+  await dotenv.load(fileName: ".env.local");
+
+  Gemini.init(apiKey: dotenv.env['CHAT_API_KEY']!);
+
   runApp(
     // 1. Dùng MultiProvider để bọc ứng dụng
     MultiProvider(
@@ -45,6 +57,7 @@ void main() async {
         // Cung cấp các service và provider không phụ thuộc
         ChangeNotifierProvider(create: (context) => TodayStatsProvider()),
         ChangeNotifierProvider(create: (context) => HistoryProvider()),
+        ChangeNotifierProvider(create: (context) => ChatProvider()),
         ChangeNotifierProvider(create: (context) => AccountSetupProvider()),
         ChangeNotifierProvider(create: (context) => AuthProvider()),
         ChangeNotifierProvider(create: (context) => UserProvider()),
