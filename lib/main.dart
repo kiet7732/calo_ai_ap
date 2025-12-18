@@ -9,6 +9,7 @@ import '../providers/history_provider.dart';
 import '../providers/auth/auth_provider.dart';
 import '../providers/report/report_provider.dart';
 import '../providers/account_setup_provider.dart';
+import '../providers/user_provider.dart';
 import 'firebase_options.dart';
 import '../services/notification_service.dart'; 
 import '../providers/notification_settings_provider.dart'; 
@@ -21,7 +22,7 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  
+  await dotenv.load(fileName: ".env.local");
   // TẠO INSTANCE DUY NHẤT: Sử dụng factory constructor của Singleton
   final notificationService = NotificationService();
   await notificationService.initialize();
@@ -46,6 +47,7 @@ void main() async {
         ChangeNotifierProvider(create: (context) => HistoryProvider()),
         ChangeNotifierProvider(create: (context) => AccountSetupProvider()),
         ChangeNotifierProvider(create: (context) => AuthProvider()),
+        ChangeNotifierProvider(create: (context) => UserProvider()),
         // SỬA LỖI: Cung cấp chính instance đã được khởi tạo ở trên,
         // không tạo một instance mới.
         Provider<NotificationService>.value(value: notificationService),
