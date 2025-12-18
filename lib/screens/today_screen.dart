@@ -233,6 +233,7 @@ class TodayScreen extends StatelessWidget {
                                   final item = record.$2;
                                   return Padding(
                                     padding: const EdgeInsets.only(bottom: 8.0),
+
                                     child: MealItemTile(
                                       
                                       meal: Meal(

@@ -6,6 +6,7 @@ class SettingsTile extends StatelessWidget {
   final Color iconColor;
   final String title;
   final Widget? trailing;
+  final Widget? customTrailing; // THÊM: Widget tùy chỉnh cho phần bên phải
   final VoidCallback? onTap;
 
   const SettingsTile({
@@ -13,6 +14,7 @@ class SettingsTile extends StatelessWidget {
     required this.icon,
     required this.iconColor,
     required this.title,
+    this.customTrailing,
     this.trailing,
     this.onTap,
   });
@@ -45,7 +47,9 @@ class SettingsTile extends StatelessWidget {
                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
                 ),
               ),
-              if (trailing != null)
+              if (customTrailing != null) // Ưu tiên customTrailing
+                customTrailing!
+              else if (trailing != null)
                 trailing!
               else if (onTap != null)
                 const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),

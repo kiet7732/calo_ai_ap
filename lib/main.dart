@@ -16,11 +16,33 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async { // 1. Chuyển hàm main thành async
   // 2. Đảm bảo các binding của Flutter đã sẵn sàng
+import '../providers/user_provider.dart';
+import 'firebase_options.dart';
+import '../services/notification_service.dart'; 
+import '../providers/notification_settings_provider.dart'; 
+import 'services/gemini_service.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+void main() async { 
+  
   WidgetsFlutterBinding.ensureInitialized();
-  // 3. Khởi tạo Firebase và đợi cho đến khi hoàn tất
+  
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  await dotenv.load(fileName: ".env.local");
+  // TẠO INSTANCE DUY NHẤT: Sử dụng factory constructor của Singleton
+  final notificationService = NotificationService();
+  await notificationService.initialize();
+  await notificationService.requestPermissions();
+  
+  // Đảm bảo Flutter đã được khởi tạo
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Tải các biến môi trường từ file .env.local
+  await dotenv.load(fileName: ".env.local");
+
+  // 2. KHẮC PHỤC: Khởi tạo Gemini Service trước khi chạy app
+  GeminiService.initialize();
 
   // Tải các biến môi trường từ file .env.local
   await dotenv.load(fileName: ".env.local");
@@ -32,9 +54,16 @@ void main() async { // 1. Chuyển hàm main thành async
     MultiProvider(
       // 2. Cung cấp một DANH SÁCH các provider
       providers: [
+        // Cung cấp các service và provider không phụ thuộc
         ChangeNotifierProvider(create: (context) => TodayStatsProvider()),
         ChangeNotifierProvider(create: (context) => HistoryProvider()),
         ChangeNotifierProvider(create: (context) => ChatProvider()),
+        ChangeNotifierProvider(create: (context) => AccountSetupProvider()),
+        ChangeNotifierProvider(create: (context) => AuthProvider()),
+        ChangeNotifierProvider(create: (context) => UserProvider()),
+        // SỬA LỖI: Cung cấp chính instance đã được khởi tạo ở trên,
+        // không tạo một instance mới.
+        Provider<NotificationService>.value(value: notificationService),
 
         // ProxyProvider để ReportProvider có thể "đọc" dữ liệu từ HistoryProvider
         ChangeNotifierProxyProvider<HistoryProvider, ReportProvider>(
@@ -42,9 +71,12 @@ void main() async { // 1. Chuyển hàm main thành async
           update: (_, history, previousReport) =>
               previousReport!..updateDailyStats(history.dailyStats),
         ),
-        ChangeNotifierProvider(create: (context) => AccountSetupProvider()),
-        // Thêm AuthProvider vào đây để toàn bộ ứng dụng có thể truy cập
-        ChangeNotifierProvider(create: (context) => AuthProvider()),
+
+        // Thêm NotificationSettingsProvider
+        ChangeNotifierProxyProvider<NotificationService, NotificationSettingsProvider>(
+          create: (context) => NotificationSettingsProvider(context.read<NotificationService>()),
+          update: (_, notificationService, previous) => NotificationSettingsProvider(notificationService),
+        ),
       ],
 
       // 3. Child là ứng dụng MyApp
