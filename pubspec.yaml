@@ -46,22 +46,18 @@ dependencies:
   firebase_auth: ^6.1.2
   google_sign_in: ^6.2.1
   cloud_firestore: ^6.1.0
-  flutter_gemini: ^3.0.0
   flutter_dotenv: ^6.0.0
   google_generative_ai: ^0.4.7
   shared_preferences: ^2.5.3
   awesome_notifications: ^0.10.1
   timezone: ^0.10.1
   flutter_launcher_icons: ^0.14.4
-  image_picker: ^1.2.1
   camera: ^0.11.3
   flutter_gemini: ^3.0.0
-  flutter_dotenv: ^6.0.0 # THÊM: Thư viện quản lý biến môi trường
-  flutter_image_compress: ^2.4.0 # THÊM: Thư viện nén ảnh
+  flutter_image_compress: ^2.4.0 
   path_provider: ^2.1.5
   cloudinary_public: ^0.23.1
   image_picker: ^1.2.1
-  flutter_dotenv: ^6.0.0
   cached_network_image: ^3.4.1
 
 dev_dependencies:

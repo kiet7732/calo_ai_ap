@@ -13,15 +13,11 @@ import '../providers/chat_provider.dart';
 import 'firebase_options.dart';
 import 'package:flutter_gemini/flutter_gemini.dart'; 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-
-void main() async { // 1. Chuyển hàm main thành async
-  // 2. Đảm bảo các binding của Flutter đã sẵn sàng
 import '../providers/user_provider.dart';
-import 'firebase_options.dart';
 import '../services/notification_service.dart'; 
 import '../providers/notification_settings_provider.dart'; 
 import 'services/gemini_service.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 void main() async { 
   
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,40 +25,30 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
   await dotenv.load(fileName: ".env.local");
   // TẠO INSTANCE DUY NHẤT: Sử dụng factory constructor của Singleton
   final notificationService = NotificationService();
   await notificationService.initialize();
   await notificationService.requestPermissions();
   
-  // Đảm bảo Flutter đã được khởi tạo
-  WidgetsFlutterBinding.ensureInitialized();
-
-  // Tải các biến môi trường từ file .env.local
-  await dotenv.load(fileName: ".env.local");
-
-  // 2. KHẮC PHỤC: Khởi tạo Gemini Service trước khi chạy app
+  
   GeminiService.initialize();
 
-  // Tải các biến môi trường từ file .env.local
-  await dotenv.load(fileName: ".env.local");
-
-  Gemini.init(apiKey: dotenv.env['CHAT_API_KEY']!);
-
+  Gemini.init(apiKey: dotenv.env['GEMINI_API_KEY']!);
+  // Gemini.init(apiKey: dotenv.env['CHAT_API_KEY']!);
+  
   runApp(
-    // 1. Dùng MultiProvider để bọc ứng dụng
     MultiProvider(
-      // 2. Cung cấp một DANH SÁCH các provider
       providers: [
-        // Cung cấp các service và provider không phụ thuộc
+        
         ChangeNotifierProvider(create: (context) => TodayStatsProvider()),
         ChangeNotifierProvider(create: (context) => HistoryProvider()),
         ChangeNotifierProvider(create: (context) => ChatProvider()),
         ChangeNotifierProvider(create: (context) => AccountSetupProvider()),
         ChangeNotifierProvider(create: (context) => AuthProvider()),
         ChangeNotifierProvider(create: (context) => UserProvider()),
-        // SỬA LỖI: Cung cấp chính instance đã được khởi tạo ở trên,
-        // không tạo một instance mới.
+
         Provider<NotificationService>.value(value: notificationService),
 
         // ProxyProvider để ReportProvider có thể "đọc" dữ liệu từ HistoryProvider
