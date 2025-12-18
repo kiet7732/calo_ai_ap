@@ -99,24 +99,44 @@ class TodayStatsProvider extends ChangeNotifier {
     List<MealEntry> todaysEntries = [];
     Map<DateTime, List<MealEntry>> oldEntriesByDate = {};
 
+    print(" Bắt đầu quét ${docs.length} bữa ăn...");
 
     for (var doc in docs) {
-      final entry = MealEntry.fromFirestore(doc as DocumentSnapshot<Map<String, dynamic>>);
-      if (entry.createdAt.isBefore(startOfToday)) {
-        final dateKey = DateTime(entry.createdAt.year, entry.createdAt.month, entry.createdAt.day);
-        oldEntriesByDate.update(dateKey, (list) => list..add(entry), ifAbsent: () => [entry]);
-      } else {
-        todaysEntries.add(entry);
+      // --- BẮT ĐẦU VÙNG AN TOÀN ---
+      try {
+        // Cố gắng đọc dữ liệu
+        final entry = MealEntry.fromFirestore(doc as DocumentSnapshot<Map<String, dynamic>>);
+        
+        // Nếu đọc thành công thì mới chạy logic tiếp theo
+        if (entry.createdAt.isBefore(startOfToday)) {
+          final dateKey = DateTime(entry.createdAt.year, entry.createdAt.month, entry.createdAt.day);
+          oldEntriesByDate.update(dateKey, (list) => list..add(entry), ifAbsent: () => [entry]);
+        } else {
+          // Kiểm tra xem bữa ăn có món nào không
+          if (entry.items.isNotEmpty) {
+             todaysEntries.add(entry);
+             print("Đã lấy: Bữa ${entry.mealType} (${entry.items.length} món)");
+          } else {
+             print("Bữa ${doc.id} rỗng (items = []) -> Bỏ qua");
+          }
+        }
+      } catch (e) {
+        // --- NẾU CÓ LỖI: Chỉ in ra và BỎ QUA món này ---
+        print("LỖI DATA HỎNG tại ID: ${doc.id}");
+        print("Lý do: $e");
+        continue; 
       }
     }
 
-    // Nếu phát hiện có bữa ăn của ngày cũ, thực hiện quy trình "Chốt sổ"
+    // ... (Phần logic Archive cũ giữ nguyên) ...
     if (oldEntriesByDate.isNotEmpty) {
-      if (kDebugMode) print("[Provider] Found old meal entries. Archiving...");
       await _archiveOldMeals(uid, oldEntriesByDate);
     }
 
-    _todayMealEntries = todaysEntries; // Cập nhật danh sách bữa ăn của hôm nay
+    // Sắp xếp lại cho đẹp (Mới nhất lên đầu)
+    todaysEntries.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+    _todayMealEntries = todaysEntries;
     _calculateTodayTotals();
   }
 

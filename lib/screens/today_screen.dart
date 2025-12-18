@@ -33,6 +33,11 @@ class TodayScreen extends StatelessWidget {
     final stats = context.watch<TodayStatsProvider>();
     final List<MealEntry> todayMealEntries = stats.todayMealEntries;
 
+   print(" UI UPDATE: Có ${todayMealEntries.length} bữa ăn.");
+    for(var e in todayMealEntries) {
+       print("   - Bữa ${e.id}: ${e.items.length} món");
+    }
+
     
     return Scaffold(
       // Đặt màu nền chung cho khu vực cuộn
@@ -46,7 +51,7 @@ class TodayScreen extends StatelessWidget {
             height: 300, // Chiều cao của vùng nền xanh
             decoration: const BoxDecoration(
               color: primaryColor,
-              // Bạn có thể thêm hình ảnh sóng (wavy) ở đây nếu muốn
+              // thêm hình ảnh sóng (wavy) ở đây 
               // image: DecorationImage(
               //   image: AssetImage('assets/images/header_wave.png'),
               //   fit: BoxFit.cover,
@@ -230,8 +235,7 @@ class TodayScreen extends StatelessWidget {
                                     padding: const EdgeInsets.only(bottom: 8.0),
 
                                     child: MealItemTile(
-                                      // Giả lập một đối tượng Meal để tương thích với MealItemTile
-                                      // Bạn có thểealItemTile để nhận FoodItem và mealType
+                                      
                                       meal: Meal(
                                         id: entry.id, name: item.name, date: entry.createdAt,
                                         calories: item.calories.toInt(), emoji: item.idIcon, protein: item.protein.toInt(),
