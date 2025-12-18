@@ -1,6 +1,5 @@
-// lib/models/user_profile.dart
-
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../utils/app_helpers.dart';
 
 // 1. Định nghĩa các Enum (Kiểu dữ liệu)
 enum Gender { male, female, other }
@@ -119,26 +118,48 @@ class UserProfile {
   // 4. FACTORY FROMFIRESTORE 
   // Tạo một đối tượng UserProfile từ một DocumentSnapshot của Firestore.
   factory UserProfile.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
-    final data = doc.data()!;
+    final data = doc.data();
+
+    if (data == null) {
+      return UserProfile(
+        uid: doc.id,
+        email: '',
+        displayName: 'Người dùng',
+        height: 0,
+        currentWeight: 0,
+        goalWeight: 0,
+        dateOfBirth: DateTime(2000, 1, 1),
+        gender: Gender.other,
+        activityLevel: ActivityLevel.sedentary,
+        calorieGoal: 0, proteinGoal: 0, carbGoal: 0, fatGoal: 0,
+      );
+    }
+
     return UserProfile(
       setupComplete: data['setupComplete'] ?? false,
-      uid: data['uid'] ?? '',
+      uid: data['uid'] ?? doc.id,
       email: data['email'] ?? '',
-      displayName: data['displayName'] ?? '',
+      displayName: data['displayName'] ?? 'Người dùng',
       photoUrl: data['photoUrl'],
-      createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
-      height: data['height'] ?? 0,
-      currentWeight: (data['currentWeight'] ?? 0.0).toDouble(),
-      goalWeight: (data['goalWeight'] ?? 0.0).toDouble(),
-      // Chuyển đổi chuỗi ISO 8601 về lại DateTime
-      dateOfBirth: DateTime.parse(data['dateOfBirth']),
-      // Chuyển đổi String về lại Enum
-      gender: Gender.values.byName(data['gender'] ?? 'other'),
-      activityLevel: ActivityLevel.values.byName(data['activityLevel'] ?? 'sedentary'),
-      calorieGoal: data['calorieGoal'] ?? 0,
-      proteinGoal: data['proteinGoal'] ?? 0,
-      carbGoal: data['carbGoal'] ?? 0,
-      fatGoal: data['fatGoal'] ?? 0,
+      
+      // Xử lý ngày tạo tài khoản
+      createdAt: AppHelpers.parseDate(data['createdAt'], fallback: DateTime.now()),
+
+      // Xử lý chỉ số (dùng helper để an toàn với kiểu num)
+      height: AppHelpers.parseInt(data['height']),
+      currentWeight: AppHelpers.parseDouble(data['currentWeight']),
+      goalWeight: AppHelpers.parseDouble(data['goalWeight']),
+      
+      // Xử lý ngày sinh & Enum
+      dateOfBirth: AppHelpers.parseDate(data['dateOfBirth']),
+      gender: AppHelpers.parseEnum(data['gender'], Gender.values, Gender.other),
+      activityLevel: AppHelpers.parseEnum(data['activityLevel'], ActivityLevel.values, ActivityLevel.sedentary),
+      
+      // Xử lý mục tiêu dinh dưỡng
+      calorieGoal: AppHelpers.parseInt(data['calorieGoal']),
+      proteinGoal: AppHelpers.parseInt(data['proteinGoal']),
+      carbGoal: AppHelpers.parseInt(data['carbGoal']),
+      fatGoal: AppHelpers.parseInt(data['fatGoal']),
     );
   }
 }

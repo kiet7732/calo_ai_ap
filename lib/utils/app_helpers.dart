@@ -1,4 +1,5 @@
-// lib/utils/app_helpers.dart
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// Trả về chuỗi ngày tháng năm hiện tại theo định dạng "T2, 29 tháng 7, 2024".
 String getCurrentDate() {
@@ -14,3 +15,27 @@ DateTime getToday() {
 return DateTime(now.year, now.month, now.day, now.hour, now.minute);
 } 
 
+class AppHelpers {
+  /// Xử lý Ngày tháng (Chấp nhận cả String và Timestamp)
+  static DateTime parseDate(dynamic val, {DateTime? fallback}) {
+    if (val is Timestamp) return val.toDate();
+    if (val is String) {
+      return DateTime.tryParse(val) ?? (fallback ?? DateTime(2000, 1, 1));
+    }
+    return fallback ?? DateTime(2000, 1, 1);
+  }
+
+  /// Xử lý Số (Chấp nhận cả int và double)
+  static int parseInt(dynamic val) => (val is num) ? val.toInt() : 0;
+  static double parseDouble(dynamic val) => (val is num) ? val.toDouble() : 0.0;
+
+  /// Xử lý Enum (Không phân biệt hoa thường)
+  /// Ví dụ: AppHelpers.parseEnum(data['gender'], Gender.values, Gender.other)
+  static T parseEnum<T extends Enum>(dynamic val, List<T> values, T defaultValue) {
+    final String s = (val ?? '').toString().toLowerCase();
+    return values.firstWhere(
+      (e) => e.name.toLowerCase() == s,
+      orElse: () => defaultValue,
+    );
+  }
+}
