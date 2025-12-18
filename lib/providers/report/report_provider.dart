@@ -21,45 +21,68 @@ class ReportProvider extends ChangeNotifier {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
 
-    final int daysToCalculate = timeRange == TimeRange.week ? 7 : 30;
-    
     // Tạo map để tra cứu nhanh: Map<DateTime, DailyStat>
     final Map<DateTime, DailyStat> statsMap = {
-      for (var stat in _dailyStats) 
-        DateTime(stat.date.year, stat.date.month, stat.date.day): stat
+      for (var stat in _dailyStats) DateTime(stat.date.year, stat.date.month, stat.date.day): stat
     };
 
     // 1. Tạo danh sách dữ liệu cho biểu đồ
     final List<double> dailyCalories = [];
     final List<String> labels = [];
-    
-    // Biến tính trung bình
+
+    // Biến tổng để tính trung bình
     double totalCalories = 0;
     double totalProtein = 0;
     double totalCarbs = 0;
     double totalFat = 0;
     int dataPointsCount = 0;
 
-    for (int i = 0; i < daysToCalculate; i++) {
-      // Tính ngược từ hôm nay về quá khứ (để hiển thị đúng thứ tự trên biểu đồ thì cần reverse sau)
-      // Tuy nhiên fl_chart thường vẽ từ trái qua phải (0 -> max), nên ta cần loop từ quá khứ -> hiện tại
-      
-      final date = today.subtract(Duration(days: daysToCalculate - 1 - i));
-      final stat = statsMap[date];
-      
-      // Lấy dữ liệu (nếu không có thì là 0)
-      final cal = stat?.totalCalories ?? 0.0;
-      
-      dailyCalories.add(cal);
-      labels.add(DateFormat('d/M').format(date));
+    if (timeRange == TimeRange.week) {
+      // Tuần hiện tại: từ Monday -> Sunday (không trộn sang tuần khác)
+      // DateTime.weekday: Monday=1 .. Sunday=7
+      final startOfWeek = today.subtract(Duration(days: today.weekday - 1));
+     
+      for (int i = 0; i < 7; i++) {
+        final date = startOfWeek.add(Duration(days: i));
+        final stat = statsMap[date];
+        final cal = stat?.totalCalories ?? 0.0;
+        dailyCalories.add(cal);
+        labels.add(DateFormat('EEE').format(date)); // Mon, Tue, ...
 
-      // Cộng dồn để tính trung bình (chỉ tính những ngày có dữ liệu > 0 để trung bình chính xác hơn, hoặc tính cả tùy logic)
-      if (stat != null) {
-        totalCalories += stat.totalCalories;
-        totalProtein += stat.totalProtein;
-        totalCarbs += stat.totalCarbs;
-        totalFat += stat.totalFat;
-        dataPointsCount++;
+        if (stat != null) {
+          totalCalories += stat.totalCalories;
+          totalProtein += stat.totalProtein;
+          totalCarbs += stat.totalCarbs;
+          totalFat += stat.totalFat;
+          dataPointsCount++;
+        }
+      }
+    } else {
+      // Tháng hiện tại: hiển thị 1..31 (không lẫn dữ liệu tháng khác)
+      final year = today.year;
+      final month = today.month;
+ 
+      for (int day = 1; day <= 31; day++) {
+        final date = DateTime(year, month, day);
+        // Nếu DateTime rolled over to next month, treat as missing (0)
+        if (date.month != month) {
+          dailyCalories.add(0.0);
+          labels.add(day.toString());
+          continue;
+        }
+
+        final stat = statsMap[date];
+        final cal = stat?.totalCalories ?? 0.0;
+        dailyCalories.add(cal);
+        labels.add(day.toString());
+
+        if (stat != null) {
+          totalCalories += stat.totalCalories;
+          totalProtein += stat.totalProtein;
+          totalCarbs += stat.totalCarbs;
+          totalFat += stat.totalFat;
+          dataPointsCount++;
+        }
       }
     }
     

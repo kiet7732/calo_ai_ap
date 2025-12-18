@@ -39,6 +39,20 @@ class AuthProvider with ChangeNotifier {
     }
 
     try {
+      //Buộc làm mới token của người dùng.
+      // Nếu người dùng đã bị xóa khỏi Firebase Auth, lệnh này sẽ ném ra một exception.
+      await user.reload();
+      // Sau khi reload, lấy lại thông tin user mới nhất vì có thể đã bị thay đổi (thành null).
+      final freshUser = _auth.currentUser;
+      if (freshUser == null) {
+        if (kDebugMode) {
+          print("[AuthCheck] User was deleted from Firebase Auth. Navigating to login.");
+        }
+        // Dọn dẹp phiên đăng nhập Google cũ nếu có
+        await _googleSignIn.signOut();
+        return AuthStatus.notLoggedIn;
+      }
+
       if (kDebugMode) {
         print("[AuthCheck] User ${user.uid} is logged in. Checking Firestore...");
       }
@@ -57,6 +71,16 @@ class AuthProvider with ChangeNotifier {
         return AuthStatus.successNewUser;
       }
     } catch (e) {
+      // Bắt lỗi cụ thể khi người dùng không còn tồn tại hoặc đã bị vô hiệu hóa.
+      if (e is FirebaseAuthException && (e.code == 'user-not-found' || e.code == 'user-disabled')) {
+        if (kDebugMode) {
+          print("[AuthCheck] User does not exist anymore or is disabled. Error: ${e.code}");
+        }
+        // Dọn dẹp và đăng xuất cục bộ để đảm bảo an toàn.
+        await _googleSignIn.signOut();
+        await _auth.signOut();
+        return AuthStatus.notLoggedIn;
+      }
       _errorMessage = "Lỗi kiểm tra trạng thái: ${e.toString()}";
       if (kDebugMode) print("[AuthCheck] Error: $_errorMessage");
       return AuthStatus.error;
@@ -189,12 +213,13 @@ class AuthProvider with ChangeNotifier {
         // Điều hướng đến login là một lựa chọn an toàn mặc định.
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(errorMessage ?? "Đã có lỗi xảy ra. Vui lòng thử lại."),
+            content: Text(errorMessage ?? "Đã xảy ra lỗi. Vui lòng đăng nhập lại."),
             backgroundColor: Colors.red,
           ),
         );
         
-        print("Đăng nhập không thành công. lỗi ngoại lệ nên xem lại");
+        // SỬA: Thêm điều hướng về màn hình login khi có lỗi
+        Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
         break;
       case AuthStatus.notLoggedIn:
       default:
