@@ -52,7 +52,7 @@ class CalorieProgressRing extends StatelessWidget {
               const Text('kcal', style: TextStyle(fontSize: 14, color: Colors.grey)),
               const SizedBox(height: 8),
               Text(
-                remaining > 0 ? 'Còn ${remaining} kcal' : 'Vượt ${-remaining} kcal',
+                remaining > 0 ? 'Còn ${remaining.toStringAsFixed(1)} kcal' : 'Vượt ${(-remaining).toStringAsFixed(1)} kcal',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,

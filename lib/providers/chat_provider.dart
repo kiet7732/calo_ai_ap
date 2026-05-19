@@ -9,6 +9,8 @@ import '../services/chat/chat_session_service.dart';
 import '../services/gemini/gemini_api_manager.dart';
 import '../services/gemini/gemini_response_parser.dart';
 import 'today_stats_provider.dart';
+import '../services/gemini/gemini_api_manager.dart';
+import '../services/gemini/gemini_response_parser.dart';
 
 class ChatMessage {
   ChatMessage({
