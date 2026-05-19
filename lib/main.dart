@@ -11,37 +11,28 @@ import '../providers/report/report_provider.dart';
 import '../providers/account_setup_provider.dart';
 import '../providers/chat_provider.dart';
 import 'firebase_options.dart';
-import 'package:flutter_gemini/flutter_gemini.dart'; 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../providers/user_provider.dart';
-import '../services/notification_service.dart'; 
-import '../providers/notification_settings_provider.dart'; 
+import '../services/notification_service.dart';
+import '../providers/notification_settings_provider.dart';
 import 'services/gemini_service.dart';
 
-void main() async { 
-  
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   await dotenv.load(fileName: ".env.local");
   // TẠO INSTANCE DUY NHẤT: Sử dụng factory constructor của Singleton
   final notificationService = NotificationService();
   await notificationService.initialize();
   await notificationService.requestPermissions();
-  
-  
+
   GeminiService.initialize();
 
-  Gemini.init(apiKey: dotenv.env['GEMINI_API_KEY']!);
-  // Gemini.init(apiKey: dotenv.env['CHAT_API_KEY']!);
-  
   runApp(
     MultiProvider(
       providers: [
-        
         ChangeNotifierProvider(create: (context) => TodayStatsProvider()),
         ChangeNotifierProvider(create: (context) => HistoryProvider()),
         ChangeNotifierProvider(create: (context) => ChatProvider()),
@@ -59,9 +50,14 @@ void main() async {
         ),
 
         // Thêm NotificationSettingsProvider
-        ChangeNotifierProxyProvider<NotificationService, NotificationSettingsProvider>(
-          create: (context) => NotificationSettingsProvider(context.read<NotificationService>()),
-          update: (_, notificationService, previous) => NotificationSettingsProvider(notificationService),
+        ChangeNotifierProxyProvider<
+          NotificationService,
+          NotificationSettingsProvider
+        >(
+          create: (context) =>
+              NotificationSettingsProvider(context.read<NotificationService>()),
+          update: (_, notificationService, previous) =>
+              NotificationSettingsProvider(notificationService),
         ),
       ],
 
