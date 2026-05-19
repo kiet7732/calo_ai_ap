@@ -1,12 +1,10 @@
 import 'dart:async';
-import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:http/http.dart' as http;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'today_stats_provider.dart';
+import '../services/gemini/gemini_api_manager.dart';
+import '../services/gemini/gemini_response_parser.dart';
 
 class ChatMessage {
   String text;
@@ -55,7 +53,8 @@ class ChatProvider extends ChangeNotifier {
       final remaining = target - consumed;
 
       // 🔥 SYSTEM PROMPT – KỶ LUẬT TUYỆT ĐỐI
-      _systemInstruction = """
+      _systemInstruction =
+          """
 VAI TRÒ: Hệ thống gợi ý món ăn tự động Calo AI.
 DỮ LIỆU ĐẦU VÀO: Mục tiêu: $goal | Calo còn lại: $remaining kcal.
 
@@ -83,9 +82,10 @@ LOGIC SUY LUẬN:
 
       String welcomeMsg =
           "Chào bạn! 👋 Còn $remaining kcal. Đói bụng chưa? Để mình gợi ý vài món nhé?";
-      if (remaining < 0)
+      if (remaining < 0) {
         welcomeMsg =
             "Hôm nay lố $remaining kcal rồi 😅. Mai làm lại! Giờ cần tâm sự gì không?";
+      }
 
       _finishInit(welcomeMsg);
     } catch (e) {
@@ -115,77 +115,77 @@ LOGIC SUY LUẬN:
     _isSending = true;
     notifyListeners();
 
-    final apiKey = dotenv.env['CHAT_API_KEY'];
-    if (apiKey == null) {
+    final hasKeys = GeminiApiManager.instance.availableKeyCount > 0;
+    if (!hasKeys) {
       _handleError("Chưa cấu hình API Key");
       return;
     }
 
     // 2. Cập nhật lịch sử (CHỈ LƯU TIN NHẮN THUẦN, KHÔNG GHÉP PROMPT NỮA)
     // Việc tách Prompt ra giúp lịch sử sạch đẹp và AI không bị loạn.
-    _apiHistory.add({"role": "user", "parts": [{"text": text}]});
+    _apiHistory.add({
+      "role": "user",
+      "parts": [
+        {"text": text},
+      ],
+    });
 
     // Tạo payload gửi đi
     List<Map<String, dynamic>> requestPayload = List.from(_apiHistory);
 
     try {
-      const modelName = 'gemini-2.5-flash'; 
-      final url = Uri.parse("https://generativelanguage.googleapis.com/v1beta/models/$modelName:generateContent?key=$apiKey");
-
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          
+      final response = await GeminiApiManager.instance.generateContent(
+        modelName: 'gemini-2.5-flash',
+        body: {
           "systemInstruction": {
             "parts": [
-              {"text": _systemInstruction ?? "Bạn là trợ lý ảo."}
-            ]
+              {"text": _systemInstruction ?? "Bạn là trợ lý ảo."},
+            ],
           },
-          
-          "contents": requestPayload, // Lịch sử chat (User/Model)
-          
-          "generationConfig": {
-            "temperature": 1.0, 
-            "maxOutputTokens": 2000,
-          },
+          "contents": requestPayload,
+          "generationConfig": {"temperature": 1.0, "maxOutputTokens": 2000},
           "safetySettings": [
-            {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+            {
+              "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+              "threshold": "BLOCK_NONE",
+            },
             {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-            {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
-            {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"}
-          ]
-        }),
+            {
+              "category": "HARM_CATEGORY_HATE_SPEECH",
+              "threshold": "BLOCK_NONE",
+            },
+            {
+              "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+              "threshold": "BLOCK_NONE",
+            },
+          ],
+        },
       );
 
       _isSending = false;
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(utf8.decode(response.bodyBytes));
-        
-        String? botReply;
-        if (data['candidates'] != null && data['candidates'].isNotEmpty) {
-           final parts = data['candidates'][0]['content']['parts'];
-           if (parts != null && parts.isNotEmpty) {
-              botReply = parts[0]['text'];
-           }
-        }
+      final botReply = GeminiResponseParser.extractText(response);
 
-        if (botReply != null) {
-           print("🤖 [ChatProvider] Bot Reply: $botReply");
-          _messages.add(ChatMessage(text: botReply, isUser: false));
-          _apiHistory.add({"role": "model", "parts": [{"text": botReply}]});
-        } else {
-          _messages.add(ChatMessage(text: "Hệ thống không phản hồi.", isUser: false));
-        }
+      if (botReply != null) {
+        print("🤖 [ChatProvider] Bot Reply: $botReply");
+        _messages.add(ChatMessage(text: botReply, isUser: false));
+        _apiHistory.add({
+          "role": "model",
+          "parts": [
+            {"text": botReply},
+          ],
+        });
       } else {
-        print("🔥 Lỗi API: ${response.statusCode} - ${response.body}");
-        _messages.add(ChatMessage(text: "Lỗi kết nối: ${response.statusCode}", isUser: false));
-        _apiHistory.removeLast();
+        _messages.add(
+          ChatMessage(text: "Hệ thống không phản hồi.", isUser: false),
+        );
       }
       notifyListeners();
-
     } catch (e) {
+      if (e is GeminiApiException) {
+        _handleError(e.userMessage);
+        return;
+      }
       _handleError("Lỗi ứng dụng: $e");
     }
   }
