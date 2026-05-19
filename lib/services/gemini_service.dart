@@ -1,7 +1,9 @@
-import 'dart:convert';
 import 'dart:async';
+import 'dart:convert';
 import 'dart:typed_data';
+
 import 'package:image_picker/image_picker.dart';
+
 import 'gemini/gemini_api_manager.dart';
 import 'gemini/gemini_response_parser.dart';
 
@@ -13,25 +15,18 @@ class GeminiService {
   }
 
   Future<Map<String, dynamic>> analyzeImage(XFile image) async {
-    print("🤖 [Gemini] Bắt đầu phân tích (One-Shot)...");
-
-    final String prompt =
-        "Role: Nutritionist AI. Analyze this image. "
-        "STEP 1: VALIDATION. Is this an image of EDIBLE FOOD? "
-        "If the image contains people, animals (pets), cars, documents, or non-food objects, return EXACTLY: "
-        "{ \"is_food\": false } "
-        "STEP 2: IF IT IS FOOD, analyze it following these rules: "
-        " 1. Identify **Dish Name** in **VIETNAMESE**. "
-        " 2. Identify ingredients in **ENGLISH** (Standard USDA terms). "
-        " 3. **FORMAT:** Space between number and unit (e.g., '100 g'). "
-        " 4. **NO ADJECTIVES:** Remove 'raw', 'fresh', 'cooked', 'mix'. Just root nouns. "
-        "OUTPUT FORMAT (JSON ONLY): "
-        "{ "
-        "  \"is_food\": true, "
-        "  \"dish_name\": \"Tên Món Tiếng Việt\", "
-        "  \"ingredients\": [\"150 g rice noodle\", \"100 g beef\"] "
-        "} "
-        "No Markdown.";
+    const prompt =
+        'Role: Nutritionist AI. Analyze this image. '
+        'STEP 1: VALIDATION. Is this an image of EDIBLE FOOD? '
+        'If the image contains people, animals, cars, documents, or non-food objects, return EXACTLY: '
+        '{ "is_food": false } '
+        'STEP 2: IF IT IS FOOD, analyze it following these rules: '
+        '1. Identify Dish Name in VIETNAMESE. '
+        '2. Identify ingredients in ENGLISH using standard nutrition terms. '
+        '3. Format ingredients with a space between number and unit, e.g. "100 g". '
+        '4. Remove adjectives like raw, fresh, cooked, mix. '
+        'OUTPUT JSON ONLY: '
+        '{ "is_food": true, "dish_name": "Ten mon tieng Viet", "ingredients": ["150 g rice noodle", "100 g beef"] }';
 
     try {
       final Uint8List imageBytes = await image.readAsBytes();
@@ -78,13 +73,10 @@ class GeminiService {
       final responseText = GeminiResponseParser.extractText(response);
 
       if (responseText == null || responseText.isEmpty) {
-        return _errorResult("AI không trả về dữ liệu.");
+        return _errorResult('AI khong tra ve du lieu.');
       }
 
-      print("📥 [Gemini] Raw: $responseText");
-
-      // XỬ LÝ JSON
-      String jsonString = responseText;
+      var jsonString = responseText;
       if (jsonString.contains('{') && jsonString.contains('}')) {
         jsonString = jsonString.substring(
           jsonString.indexOf('{'),
@@ -92,42 +84,29 @@ class GeminiService {
         );
       }
 
-      final Map<String, dynamic> jsonResult = jsonDecode(jsonString);
+      final jsonResult = jsonDecode(jsonString) as Map<String, dynamic>;
 
       if (jsonResult['is_food'] == false) {
-        return _errorResult("Không phải đồ ăn", notFood: true);
+        return _errorResult('Khong phai do an', notFood: true);
       }
 
-      String dishName = jsonResult['dish_name'] ?? "Món ăn";
-      List<String> ingredients = [];
-      if (jsonResult['ingredients'] is List) {
-        ingredients = List<String>.from(
-          jsonResult['ingredients'].map((x) => x.toString()),
-        );
-      }
-
-      print("✅ [Gemini] Thành công: $dishName");
+      final dishName = (jsonResult['dish_name'] ?? 'Mon an').toString();
+      final ingredients = jsonResult['ingredients'] is List
+          ? List<String>.from(
+              (jsonResult['ingredients'] as List).map((x) => x.toString()),
+            )
+          : <String>[];
 
       return {'is_food': true, 'name': dishName, 'ingredients': ingredients};
     } catch (e) {
-      print("❌ [Gemini] Lỗi: $e");
-
-      String errorMsg = "Lỗi kết nối";
-
-      // BẮT LỖI 429 CỤ THỂ
       if (e is GeminiApiException) {
         return _errorResult(e.userMessage);
       }
-
-      if (e.toString().contains("429")) {
-        print("🛑 QUOTA LIMIT: Bạn đã bấm quá nhanh!");
-        // Trả về thông báo này để UI hiện lên cho người dùng biết
-        return _errorResult("Server đang bận (429). Vui lòng đợi 1 phút!");
+      if (e is TimeoutException) {
+        return _errorResult('Mang yeu, qua thoi gian cho.');
       }
 
-      if (e is TimeoutException) errorMsg = "Mạng yếu, quá thời gian chờ.";
-
-      return _errorResult(errorMsg);
+      return _errorResult('Loi ket noi');
     }
   }
 

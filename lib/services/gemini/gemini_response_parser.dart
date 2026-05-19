@@ -12,15 +12,20 @@ class GeminiResponseParser {
     final parts = content['parts'];
     if (parts is! List || parts.isEmpty) return null;
 
+    final buffer = StringBuffer();
     for (final part in parts) {
       if (part is Map<String, dynamic>) {
         final text = part['text'];
         if (text is String && text.isNotEmpty) {
-          return text;
+          if (buffer.isNotEmpty) {
+            buffer.write('\n');
+          }
+          buffer.write(text);
         }
       }
     }
 
-    return null;
+    final merged = buffer.toString().trim();
+    return merged.isEmpty ? null : merged;
   }
 }
